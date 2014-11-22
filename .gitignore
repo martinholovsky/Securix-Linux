@@ -1,0 +1,4 @@
+releases/
+*.hash
+*.sign
+*.tar.gz
