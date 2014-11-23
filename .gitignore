@@ -1,4 +1,5 @@
 releases/
+install-scripts/
 *.hash
 *.sign
 *.tar.gz
