@@ -1,0 +1,122 @@
+#!/bin/bash
+
+#: info: Securix GNU/Linux iptables ruleset
+#: file: /etc/conf.d/iptables.rules
+#: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
+#: version: 20141123
+#
+# --- Execute this script after modifications ---
+#
+# We will not modify sysctl settings here, please check /etc/sysctl.conf
+#
+
+IPTABLES="/sbin/iptables"
+IPTABLESSAVE="/etc/init.d/iptables save"
+
+if [ ! -x $IPTABLES ]; then
+    echo "IPtables executable not found. Please setup correct variable in this script."
+fi
+
+# variables
+SSHPORT="55522"
+
+
+echo "=== Configuring firewall ==="
+# set default drop policy
+echo "- Setting default policy"
+$IPTABLES -P INPUT DROP
+$IPTABLES -P FORWARD DROP
+$IPTABLES -P OUTPUT DROP
+
+# clear existing rules, chains, counters
+echo "- Clearing existing rules, chains, counters"
+$IPTABLES -F
+$IPTABLES -X
+$IPTABLES -Z
+$IPTABLES -t nat -F
+$IPTABLES -t nat -X
+$IPTABLES -t nat -Z
+$IPTABLES -t mangle -F
+$IPTABLES -t mangle -X
+$IPTABLES -t mangle -Z
+
+#########################################
+#           SERVICES chain              #
+#                                       #
+# Put allowed INCOMING connections here #
+#########################################
+echo "- Allowing services"
+$IPTABLES -N SERVICES
+#ssh
+$IPTABLES -A SERVICES -p tcp --dport $SSHPORT -j ACCEPT
+#apache
+#$IPTABLES -A SERVICES -p tcp --dport http -j ACCEPT
+#$IPTABLES -A SERVICES -p tcp --dport https -j ACCEPT
+
+#
+# Create BLACKLIST chain
+#
+# Block any access from specified sources
+echo "- Setting Blacklist"
+$IPTABLES -N BLACKLIST
+# $IPTABLES -A BLACKLIST -s 192.168.0.0/24 -j DROP
+# $IPTABLES -A BLACKLIST -s 192.168.0.0/24 -j REJECT --reject-with icmp-host-prohibited
+
+#
+# Create ICMP chain
+#
+echo "- ICMP chain"
+$IPTABLES -N ICMP
+$IPTABLES -A ICMP -p icmp --icmp-type 0 -j ACCEPT
+$IPTABLES -A ICMP -p icmp --icmp-type 3 -j ACCEPT
+$IPTABLES -A ICMP -p icmp --icmp-type 11 -j ACCEPT
+$IPTABLES -A ICMP -p icmp --icmp-type 8 -m limit --limit 1/second -j ACCEPT
+$IPTABLES -A ICMP -p icmp -m limit --limit 5/minute -j LOG --log-prefix "ICMP drop:"
+$IPTABLES -A ICMP -p icmp -j DROP
+
+#
+# Create PORTSCAN detection chain
+#
+echo "- Setting portscan detection"
+$IPTABLES -N PORTSCAN
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags ALL FIN,URG,PSH -m limit --limit 5/minute -j LOG --log-level alert --log-prefix "Portscan NMAP-XMAS:"
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags ALL FIN,URG,PSH -j DROP
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags ALL ALL -m limit --limit 5/minute -j LOG --log-level 1 --log-prefix "Portscan XMAS:"
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags ALL ALL -j DROP
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG -m limit --limit 5/minute -j LOG --log-level 1 --log-prefix "Portscan XMAS-PSH:"
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags ALL SYN,RST,ACK,FIN,URG -j DROP
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags ALL NONE -m limit --limit 5/minute -j LOG --log-level 1 --log-prefix "Portscan NULL_SCAN:"
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags ALL NONE -j DROP
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags SYN,RST SYN,RST -m limit --limit 5/minute -j LOG --log-level 5 --log-prefix "Portscan SYN/RST:"
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags SYN,RST SYN,RST -j DROP
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags SYN,FIN SYN,FIN -m limit --limit 5/minute -j LOG --log-level 5 --log-prefix "Portscan SYN/FIN:"
+$IPTABLES -A PORTSCAN -p tcp --tcp-flags SYN,FIN SYN,FIN -j DROP
+
+#
+# Apply rules/chains for INPUT
+#
+echo "- INPUT chain"
+$IPTABLES -A INPUT -i lo -j ACCEPT
+$IPTABLES -A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+$IPTABLES -A INPUT -m conntrack --ctstate INVALID -j DROP
+$IPTABLES -A INPUT -j BLACKLIST
+$IPTABLES -A INPUT -p icmp -j ICMP
+$IPTABLES -A INPUT -j PORTSCAN
+$IPTABLES -A INPUT -j SERVICES
+$IPTABLES -A INPUT -m limit --limit 10/minute -j LOG --log-prefix "INPUT drop:"
+#$IPTABLES -A INPUT -p tcp -j REJECT --reject-with tcp-reset
+#$IPTABLES -A INPUT -p udp -j REJECT --reject-with icmp-port-unreachable
+
+#
+# Apply rules for OUTPUT
+#
+# Please setup outgoing access by yourself
+# At least: FTP,HTTP/S,DNS,SSH,NTP,RSYNC,PROXY,ICMP
+echo "- OUTPUT chain"
+$IPTABLES -A OUTPUT -o lo -j ACCEPT
+$IPTABLES -A OUTPUT -j ACCEPT
+
+#
+# Save rules
+#
+$IPTABLESSAVE

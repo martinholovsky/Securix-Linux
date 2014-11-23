@@ -1,0 +1,66 @@
+#!/bin/bash
+
+#: info: Securix GNU/Linux cron loader
+#: file: /usr/sbin/securix-cron
+#: symlink: /etc/cron.{hourly,daily,weekly,monthly}/sx-cron
+#: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
+#: version: 20141123
+#
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+##############################################################################
+#
+# FUNCTIONS
+#
+##############################################################################
+
+# load securix functions
+if [ ! -r /usr/sbin/securix-functions ]; then
+    echo "--- PROBLEM: /usr/sbin/securix-functions doesnt exist!!"
+    logger "CRITICAL: /usr/sbin/securix-functions doesnt exist!!"
+    exit 1
+else
+    . /usr/sbin/securix-functions
+fi
+
+##############################################################################
+#
+# MAIN
+#
+##############################################################################
+
+# Check if standard input is not a tty device (non-interactive shell).
+if [ "$INTERACTIVE" = "no" ]; then
+    
+    # which symlink call securix-cron?
+    case "$0" in
+        *cron.hourly*) type="hourly"
+            ;;
+        *cron.daily*) type="daily"
+            ;;
+        *cron.weekly*) type="weekly"
+            ;;
+        *cron.monthly*) type="monthly"
+            ;;
+    esac
+    cron_start=$(date '+%s')
+    . /usr/sbin/securix-monitor ${type} 2>&1 >> $SECURIXLOG
+    cron_end=$(date '+%s')
+    cron_run=$((cron_end - cron_start))
+    echo "=== Last cron ${TYPE} takes ${cron_run} seconds" >> $SECURIXLOG
+else
+    echo "--- Error: Securix-cron executed interactively, exiting..."
+fi

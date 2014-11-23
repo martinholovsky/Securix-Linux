@@ -1,0 +1,7 @@
+# file: /etc/securetty
+# limit root access
+console
+vc/1
+tty1
+tty2
+# serial console access

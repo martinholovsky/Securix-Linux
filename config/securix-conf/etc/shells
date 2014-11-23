@@ -1,0 +1,5 @@
+# info: valid login shells
+# file: /etc/shells
+
+/bin/bash
+/bin/sh

@@ -1,0 +1,51 @@
+
+#: info: Securix GNU/Linux SSH daemon configuration
+#: file: /etc/ssh/sshd_config
+#: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
+#: version: 0.1
+#
+# See man sshd_config for more information.
+
+# When changing SSH port, dont forget to modify /etc/conf.d/iptables.rules
+# Only members of group "sshusers" can SSH to server!
+
+Port 55522
+Protocol 2
+ServerKeyBits 2048
+#ListenAddress 0.0.0.0
+Ciphers aes256-cbc,aes256-ctr,blowfish-cbc
+Compression yes
+ClientAliveInterval 15
+ClientAliveCountMax 3
+TCPKeepAlive no
+
+PermitRootLogin no
+PermitEmptyPasswords no
+UsePrivilegeSeparation yes
+StrictModes yes
+
+AllowGroups sshusers
+PubkeyAuthentication yes
+AuthorizedKeysFile	.ssh/authorized_keys
+
+UsePAM no
+UseDNS no
+UseLogin no
+PrintLastLog yes
+PrintMotd yes
+
+Banner /etc/issue
+
+MaxAuthTries 5
+IgnoreRhosts yes
+HostbasedAuthentication no
+RhostsRSAAuthentication no
+
+AllowTcpForwarding no
+X11Forwarding no
+GatewayPorts no
+
+Subsystem	sftp	/usr/lib/misc/sftp-server
+
+SyslogFacility AUTH
+LogLevel VERBOSE
