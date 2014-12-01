@@ -5,6 +5,15 @@
 #
 #-#
 
+RELEASE: 20141201
+    
+- fixing issue with Git deployment
+
+RELEASE: 20141130
+    
+- fixed issue #37 installer error during sha512 verification
+- fixed issue with codesign verification
+
 RELEASE: 20141123
     
 - fixed issued #29 Harden Securix flows and SSL structure

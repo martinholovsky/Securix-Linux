@@ -4,7 +4,7 @@
 #: file: /usr/sbin/securix
 #: description: main securix control script for system administration
 #: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
-#: version: 20141123
+#: version: 20141201
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -651,7 +651,7 @@ case "$1" in
         echo "version - show version and patchsum"
         echo ""
         echo "You can use also short form: \"u|up|upd|updat\" - for update, \"co|con|conf|confi\" for config ect."
-        echo "Report problems on issues.securix.org"
+        echo "Please report issues on https://github.com/martincmelik/securix/issues"
         rm -f $LOCKFILE
         exit
         ;;

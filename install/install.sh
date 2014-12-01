@@ -5,7 +5,7 @@
 #: latest version: 'wget securix.org/install.sh'
 #: howto: boot from gentoo minimal cd, download and execute this script
 #: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
-#: version: 20141123
+#: version: 20141201
 #
 #
 # This program is free software: you can redistribute it and/or modify
@@ -52,11 +52,12 @@ esac
 SX_STAGE3BASEURL="https://mirror.securix.org/releases/${ARCH}/autobuilds/"
 SX_STAGE3LATESTTXT="latest-stage3-${SUBARCH}-hardened.txt"
 SX_PORTAGEFILE="https://mirror.securix.org/releases/snapshots/current/portage-latest.tar.bz2"
-STAGE3BASEURL="https://distfiles.gentoo.org/releases/${ARCH}/autobuilds/"
+# gentoo servers usually do not use https and if so, it is just self-signed certificate
+STAGE3BASEURL="http://distfiles.gentoo.org/releases/${ARCH}/autobuilds/"
 STAGE3LATESTTXT="latest-stage3-${SUBARCH}-hardened.txt"
-PORTAGEFILE="https://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2"
+PORTAGEFILE="http://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2"
 SECURIXFILES="https://update.securix.org"
-SECURIXFILESDR="https://securix.sourceforge.net"
+SECURIXFILESDR="http://securix.sourceforge.net"
 GMIRROR="http://ftp.fi.muni.cz/pub/linux/gentoo/"
 CPUS=$(grep -c '^processor' /proc/cpuinfo)
 MOPTS=$((CPUS + 1))
@@ -162,6 +163,7 @@ f_download() {
     backupfile=${backupfile%%\?*}
     echo "Downloading: ${downlink}"
     echo -n "Status:     "
+    # wget version in gentoo minimal cd do not support PFS :(
     wget --timeout=30 --no-cache --progress=dot -O "${downfile}" "${downlink}" 2>&1 | grep --line-buffered "%" | \
         sed -u -e "s,\.,,g" | awk '{printf("\b\b\b\b%4s", $2)}'
     echo " DONE"
@@ -172,7 +174,7 @@ f_download() {
         if [ ! -z $backuplink ]; then
             echo "Downloading from mirror: ${backuplink}"
             echo -n "Status:     "
-            wget --timeout=30 --secure-protocol="PFS" --no-cache --progress=dot -O "${backupfile}" "${backuplink}" 2>&1 | grep --line-buffered "%" | \
+            wget --timeout=30 --no-cache --progress=dot -O "${backupfile}" "${backuplink}" 2>&1 | grep --line-buffered "%" | \
                 sed -u -e "s,\.,,g" | awk '{printf("\b\b\b\b%4s", $2)}'
             echo " DONE"
             if [ -f $backupfile ]; then
@@ -695,16 +697,19 @@ f_download ${SECURIXFILES}/install/sha512.hash ${SECURIXFILESDR}/install/sha512.
 f_download ${SECURIXFILES}/install/sha512.hash.sign ${SECURIXFILESDR}/install/sha512.hash.sign
 
 f_msg info "###-### Step: Computing checksum ---"
-grep -E 'chroot.sh|conf.tar.gz' sha512.hash | xargs shasum -a 512 - >/dev/null
+grep -E 'chroot.sh|conf.tar.gz' sha512.hash > checksum
+shasum -a 512 -c checksum >/dev/null
 if [ $? -eq 0 ]; then
     f_msg info "--- SHA512 checksum: OK"
+    rm -f checksum
 else
     f_msg error "--- Problem when computing checksum of Securix files!!"
-    grep -E 'chroot.sh|conf.tar.gz' sha512.list | xargs shasum -a 512
+    grep -E 'chroot.sh|conf.tar.gz' sha512.list && shasum -a 512 chroot.sh conf.tar.gz
     exit_on_error
 fi
 
 f_msg info "###-### Step: Verifying Securix files signature ---"
+f_download ${SECURIXFILES}/certificates/securix-codesign.pub ${SECURIXFILESDR}/certificates/securix-codesign.pub
 openssl dgst -sha512 -verify securix-codesign.pub -signature sha512.hash.sign sha512.hash
 
 f_msg info "###-### Step: Configuring base system ---"
@@ -767,7 +772,7 @@ ${NETIP} ${SECURIX_HOSTNAME}
 cat > /mnt/gentoo/etc/securix-release << !EOF
 Securix GNU/Linux - secured linux by default
 www.securix.org
-SECURIXVERSION="20141123"
+SECURIXVERSION="20141201"
 !EOF
 
 # /etc/fstab

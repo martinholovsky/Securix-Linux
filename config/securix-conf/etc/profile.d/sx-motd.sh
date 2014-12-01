@@ -3,7 +3,7 @@
 #: info: Securix GNU/Linux motd loader
 #: file: /etc/profile.d/sx-motd.sh
 #: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
-#: version: 20141123
+#: version: 20141201
 #
 
 # Check if standard input is a tty device (interactive shell).

@@ -4,7 +4,7 @@
 #: file: /usr/sbin/securix-cron
 #: symlink: /etc/cron.{hourly,daily,weekly,monthly}/sx-cron
 #: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
-#: version: 20141123
+#: version: 20141201
 #
 #
 # This program is free software: you can redistribute it and/or modify

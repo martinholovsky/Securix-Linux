@@ -3,7 +3,7 @@
 #: info: Securix GNU/Linux global aliases
 #: file: /etc/profile.d/sx-aliases.sh
 #: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
-#: version: 20141123
+#: version: 20141201
 #
 
 if [ $EUID -ne 0 ]; then

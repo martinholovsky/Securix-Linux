@@ -3,7 +3,7 @@
 #: info: Securix GNU/Linux system variables/profile setup
 #: file: /etc/profile.d/sx-profile.sh
 #: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
-#: version: 20141123
+#: version: 20141201
 #
 
 # log user commands

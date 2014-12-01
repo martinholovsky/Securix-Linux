@@ -3,7 +3,7 @@
 #: title: Securix GNU/Linux install script - chroot part
 #: file: chroot.sh
 #: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
-#: version: 20141123
+#: version: 20141201
 #
 #
 # This file is part of Securix GNU/Linux installer.
