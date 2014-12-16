@@ -749,11 +749,11 @@ f_download ${SECURIXFILES}/certificates/securix-codesign.pub ${SECURIXFILESDR}/c
 openssl dgst -sha512 -verify securix-codesign.pub -signature sha512.hash.sign sha512.hash
 
 f_msg info "###-### Step: Configuring base system ---"
-# /etc/portage/make.conf
-cat > /mnt/gentoo/etc/portage/make.conf << !EOF
+# /etc/make.conf
+cat > /mnt/gentoo/etc/make.conf << !EOF
 
 #: title: Securix GNU/Linux make.conf
-#: file: /etc/portage/make.conf
+#: file: /etc/make.conf
 #: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
 #
 # Please consult /usr/share/portage/config/make.conf.example for a more
@@ -778,11 +778,11 @@ PORTAGE_NICENESS=10
 
 # set http_proxy if used
 if [ ! -z "$http_proxy" ]; then
-    echo "# user proxy setup is done by /etc/profile.d/sx-proxy.sh" >> /mnt/gentoo/etc/portage/make.conf
-    echo "http_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/portage/make.conf
-    echo "https_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/portage/make.conf
-    echo "ftp_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/portage/make.conf
-    echo "RSYNC_PROXY=\"${http_proxy}\"" >> /mnt/gentoo/etc/portage/make.conf
+    echo "# user proxy setup is done by /etc/profile.d/sx-proxy.sh" >> /mnt/gentoo/etc/make.conf
+    echo "http_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/make.conf
+    echo "https_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/make.conf
+    echo "ftp_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/make.conf
+    echo "RSYNC_PROXY=\"${http_proxy}\"" >> /mnt/gentoo/etc/make.conf
 fi
 
 # DNS

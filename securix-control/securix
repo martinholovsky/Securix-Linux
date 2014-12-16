@@ -457,7 +457,7 @@ f_configmail() {
 f_configmirror() {
     
     f_msg info "--- Autoselecting 3 fastest mirrors based on server responses"
-    mirrorselect -s3 -b10 -o -D -t2 >> /etc/portage/make.conf
+    mirrorselect -s3 -b10 -o -D -t2 >> /etc/make.conf
     f_msg info "--- All done"
 }
 
@@ -483,13 +483,13 @@ f_configwebproxy() {
     f_msg info "current proxy: ${http_proxy}"
     f_getvar "Specify new proxy in format \"http://\$servername:\$portnumber\": " NEWPROXY
     if [ ! -z $http_proxy ]; then
-        sed -i "/^http_proxy=/ c http_proxy=\"${NEWPROXY}\"" /etc/portage/make.conf
-        sed -i "/^ftp_proxy=/ c ftp_proxy=\"${NEWPROXY}\"" /etc/portage/make.conf
-        sed -i "/^rsync_proxy=/ c rsync_proxy=\"${NEWPROXY}\"" /etc/portage/make.conf
+        sed -i "/^http_proxy=/ c http_proxy=\"${NEWPROXY}\"" /etc/make.conf
+        sed -i "/^ftp_proxy=/ c ftp_proxy=\"${NEWPROXY}\"" /etc/make.conf
+        sed -i "/^rsync_proxy=/ c rsync_proxy=\"${NEWPROXY}\"" /etc/make.conf
     else
-        echo "http_proxy=\"${NEWPROXY}\"" >> /etc/portage/make.conf
-        echo "ftp_proxy=\"${NEWPROXY}\"" >> /etc/portage/make.conf
-        echo "rsync_proxy=\"${NEWPROXY}\"" >> /etc/portage/make.conf
+        echo "http_proxy=\"${NEWPROXY}\"" >> /etc/make.conf
+        echo "ftp_proxy=\"${NEWPROXY}\"" >> /etc/make.conf
+        echo "rsync_proxy=\"${NEWPROXY}\"" >> /etc/make.conf
     fi
     wget --timeout=60 -q www.google.com
     if [ $? -ne 0 ]; then

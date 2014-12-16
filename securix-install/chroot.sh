@@ -355,8 +355,8 @@ f_msg info "###-### Step: Importing Gentoo GPG key ---"
 #GNUPGHOME="/etc/portage/gnupg" gpg --keyserver hkp://p80.pool.sks-keyservers.net:80 --recv-keys 0x96D8BF6D
 GNUPGHOME="/etc/portage/gnupg" gpg --import /usr/share/securix/gentoo-gpg.pub
 GNUPGHOME="/etc/portage/gnupg" gpg --fingerprint 0x96D8BF6D
-echo "PORTAGE_GPG_DIR=\"/etc/portage/gnupg\"" >> /etc/portage/make.conf
-sed -i 's/USE\=\"/USE\=\"webrsync-gpg /g' /etc/portage/make.conf
+echo "PORTAGE_GPG_DIR=\"/etc/portage/gnupg\"" >> /etc/make.conf
+sed -i 's/USE\=\"/USE\=\"webrsync-gpg /g' /etc/make.conf
 
 # import Securix GPG key
 #f_msg info "###-### Step: Importing Securix GPG key ---"
