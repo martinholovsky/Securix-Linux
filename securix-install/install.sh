@@ -398,11 +398,19 @@ if [ -z "$BONDING" -o "$BONDING" = "no" ]; then
     f_yesno "Do you want setup networking manually? [NO is DHCP]" NETMANUAL
 
     if [ "$NETMANUAL" = "no" ]; then
+        
         # dhcp
-        f_msg info "-- Interfaces found in system: ${interfaces_found}"
-        f_getvar "Specify interface [default: eth0]: " NETETH "eth0"
-        USEDHCP="yes"
+        if [ $interfaces -eq 1 ]; then
+            f_msg info "-- Interfaces found in system: ${interfaces_found}"
+            f_getvar "Specify interface [default: ${interfaces_found}]: " NETETH "${interfaces_found}"
+            USEDHCP="yes"
+        else
+            f_msg info "-- Interfaces found in system: ${interfaces_found}"
+            f_getvar "Specify interface [default: eth0]: " NETETH "eth0"
+            USEDHCP="yes"
+        fi
     else
+        
         # manual
         f_msg info "Current ifconfig:"
         ifconfig | grep -B 1 inet | grep -vE '127.0.0.1|Loopback'
