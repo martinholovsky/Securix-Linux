@@ -1,0 +1,154 @@
+#!/bin/bash
+
+#: title: Securix GNU/Linux mailer script
+#: file: /usr/sbin/securix-mailer
+#: description: Securix script which handle problems reported by securix-monitor
+#: and sending scheduled emails based on priority. Script is executed by
+#: securix-monitor only.
+#: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
+#
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+##############################################################################
+#
+# VARIABLES
+#
+##############################################################################
+TYPE="$1"
+mailfile="${SECURIXVAR}/securix-mailer.compose.${RANDOM}"
+mailheader="
+ Dear administrator,
+
+this is mail from server ${HOSTNAME} where we find problems during last scan.
+Please be so kind and solve them or modify settings to appropriate state.
+"
+mailfooter="
+For more information please visit http://wiki.securix.org
+
+Thank you
+Your Securix
+"
+
+# unset variables
+unset systemalert subject
+
+##############################################################################
+#
+# FUNCTIONS
+#
+##############################################################################
+
+# load securix functions
+if [ ! -r /usr/sbin/securix-functions ]; then
+    echo "--- PROBLEM: /usr/sbin/securix-functions doesnt exist!!"
+    logger "CRITICAL: /usr/sbin/securix-functions doesnt exist!!"
+    exit 1
+else
+    . /usr/sbin/securix-functions
+fi
+
+# load securix config
+f_loadsecurixconf
+
+# avoid interactive executing
+if [ "$INTERACTIVE" = "yes" ]; then
+    f_msg error "--- Error: this script must be executed by cron and shouldn't run interactively"
+    exit 1
+fi
+
+f_composealerts() {
+    if [ ! -z $systemalerts ]; then
+        echo "${mailheader}" > ${mailfile} && chmod 700 ${mailfile}
+        for alert in ${systemalerts}; do
+            grep -E '^#:' ${alert} >> ${mailfile}
+            grep -vE '^#:' ${alert} >> ${mailfile}
+            echo "" >> ${mailfile}
+        done
+        echo "${mailfooter}" >> ${mailfile}
+    else
+        echo "--- OK: Nothing to be send during ${TYPE} type"
+    fi
+}
+
+f_sendalerts() {
+    if [ -s ${mailfile} ]; then
+        mail -s "${subject}" root < ${mailfile} 2>${SECURIXVAR}/securix-mailer.critical
+        if [ ! -s ${SECURIXVAR}/securix-mailer.critical ]; then
+            echo "--- OK: Securix alert has been sent successfully"
+            rm -f ${SECURIXVAR}/securix-mailer.critical
+        else
+            echo "--- PROBLEM: There was problem when Securix sending mail alert"
+        fi
+    else
+        echo "--- OK: Nothing to report via email"
+    fi
+}
+
+f_mailerhourly() {
+    systemalerts=$(ls ${SECURIXVAR} | grep "critical")
+    subject="Securix found critical issue on your server ${HOSTNAME}"
+    f_composealerts
+    f_sendalerts
+}
+
+f_mailerdaily() {
+    systemalerts=$(ls ${SECURIXVAR} | grep "critical|warning")
+    subject="Securix found issues which needs your attention on server ${HOSTNAME}"
+    f_composealerts
+    f_sendalerts
+}
+
+f_mailerweekly() {
+    systemalerts=$(ls ${SECURIXVAR} | grep "critical|warning|update|info")
+    subject="Securix weekly report from server ${HOSTNAME}"
+    f_composealerts
+    f_sendalerts
+}
+
+f_mailermonthly() {
+    
+   echo "--- Nothing to do during monthly scans"
+}
+
+##############################################################################
+#
+# MAIN
+#
+##############################################################################
+
+case $1 in
+    hourly) f_mailerhourly
+        ;;
+    daily) f_mailerdaily
+        ;;
+    weekly) f_mailerweekly
+        ;;
+    monthly) f_mailermonthly
+        ;;
+    *)
+        f_msg error "Error: Invalid parameter ${1}, you must specify type"
+        exit
+        ;;
+esac
+
+
+# touch securix.mail
+touch ${SECURIXVAR}/securix.mailer
+
+# cleanup
+rm -f ${mailfile}
+
+exit

@@ -1,0 +1,150 @@
+#
+#: title: Securix GNU/Linux ChangeLog
+#: file: changelog.txt
+#: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
+#
+#-#
+
+RELEASE: 20141207
+    
+- attempt to use GIT as main repository
+
+RELEASE: 20141207
+    
+- fixed issue #38 exit codes not always checked  
+- fixed issue #40 gpg not verified in install.sh
+- fixed issue #44 enforcing HTTPS
+- fixed issue #38 exit code not always checked
+
+RELEASE: 20141201
+    
+- fixing issue with Git deployment
+
+RELEASE: 20141130
+    
+- fixed issue #37 installer error during sha512 verification
+- fixed issue with codesign verification
+
+RELEASE: 20141123
+    
+- fixed issued #29 Harden Securix flows and SSL structure
+- removed self-signed Securix GPG files
+- added signature verification of Securix files during installation and update
+- added Git support to build script, this is first commit
+
+RELEASE: 20141120
+    
+- deployment of new Securix Code Sign certificate (4096bit, SHA256, StartCom CA)
+- signing of critical files by Securix Code Sign certificate
+- Securix update signature verification integration
+
+RELEASE: 20141118
+    
+- fixed wget issue with PFS secure protocol
+- Securix ID is now using output of "ifconfig -a"
+
+RELEASE: 20141118
+    
+- new Securix SSL certificate (4096bit, SHA256, StartCom CA)
+- SSL forced on all subdomains via htaccess
+- all scripts started to use https instead of http and wget is now using option secure-protocol="PFS"
+
+RELEASE: 20141106
+    
+- added Securix SSL Root CA
+
+RELEASE: 20141031
+    
+- fixed issue #3 - Cryptsetup cant be build with static USE flag
+
+
+-
+-- yes, large time gaps here... sorry about that, no time to chill
+-
+
+version 20130526
+
+    added pwgen
+    added securix motd
+    added kernel and grub update
+    added securix updating tool
+    added kernel config update to 3.7.0
+    added turned off ccache
+    added RAID devices detection and auto configuration
+    added /var/tmp/portage as tmpfs, setup noexec on /var
+    added bash command logging via PROMPT_COMMAND, removed USE flag bashlogger
+    added fail2ban default config and support to installer and securix scripts
+    added load securix config with basic sanitization
+    added new setup for limits.conf
+    added usage of Securix DR site
+    added print system limits in motd
+    change 32bit systems will not be supported
+    fix iptables rules-save
+    fix issue with motd alerts count
+
+version 20120412
+
+    added bashrc
+    added bash aliases
+    added dispatch-conf setup
+    added mailhub config
+    added cron scripts
+    added checking of Portage update GPG sign
+    added NTP configuration during network setup
+    added automatic portage and gentoolkit updates
+    added SMART failures and temperature monitoring
+    added SMART scheduled short and long self-tests
+    added unhide and scrub
+    fixed GCC compilation issues
+
+version 20120618
+
+    added automatic/specified bonding setup
+    added sudo initial file
+    added LVM monitoring
+    added additional tools (network)
+    added gcc-config selection
+    fix run errors
+
+version 20120103
+
+    added grub fallback in case of problems with new kernel (panic, ect..)
+    added grub password to avoid unauthorized single user mode
+    added automatic serial terminal access detection and setup
+    added genkernel configuration generator for further kernel updates
+    added user auditing, bash commands logging
+    added limits.conf Ð protection against depletion of system resources, fork bombs, ect.
+    added login.defs to align with Securix environment
+    added VESA framebuffer with Securix Linux Logo on boot (vga 791)
+    added Securix system groups operators and services
+    added terminal encoding in UTF-8
+    added pvcreate force to avoid questions when LVM already exist
+    fix fstab LVM misconfiguration
+    fix login issue (securetty)
+    fix iptables-save
+
+version 20111215
+
+    advanced partitioning (boot, swap, root, usr, home, var, opt, tmp) with options (where possible) noatime, nodev, nosuid, noexec
+    Full disk encryption (LUKS)
+    LVM automatically for disks >20GB
+    predefined kernel setup for virtual environments (VirtualBox, KVM, VMware, É)
+    rewritten yesno function
+    securix user for first login
+
+version 20111116
+
+    environment checking, architecture, network
+    functions, variables, system setup, trap errors
+    hostname, root password, manual network setup, É
+    partitioning (/boot, swap, /)
+    stage3 and portage installation
+    make.conf generator
+    CHROOT script
+    system installation, configuration & hardening
+    kernel compilation
+    grub installation and setup
+    compiling system applications
+    iptables script
+    sysctl config
+    kernel accelerated AES encryption

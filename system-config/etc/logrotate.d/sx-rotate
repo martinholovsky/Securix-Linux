@@ -1,0 +1,30 @@
+
+#: info: Securix GNU/Linux specific log rotate
+#: file: /etc/logrotate.d/sx-rotate
+#: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
+#
+
+
+# rotate securix log
+/var/log/securix.log {
+    sharedscripts
+    postrotate
+        /etc/init.d/syslog-ng reload > /dev/null 2>&1 || true
+    endscript
+}
+
+# rotate firewall log
+/var/log/firewall.log {
+    sharedscripts
+    postrotate
+        /etc/init.d/syslog-ng reload > /dev/null 2>&1 || true
+    endscript
+}
+
+# rotate rkhunter log
+/var/log/rkhunter.log {
+    sharedscripts
+    postrotate
+        /etc/init.d/syslog-ng reload > /dev/null 2>&1 || true
+    endscript
+}
