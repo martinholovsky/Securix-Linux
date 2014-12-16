@@ -1,7 +1,10 @@
+![Securix Mascot](https://www.securix.org/wp-content/uploads/mascot.png)
+
 Securix GNU/Linux
 =================
 
-Securix Main repository including installer, control and mirror scripts
+Securix Main repository including installer, control and mirror scripts.
+Please do not use git for installation, but follow instructions below.
 
 Check Securix [changelog.txt](https://update.securix.org/changelog/changelog.txt) to see current progress and [Securix Issues](https://github.com/martincmelik/securix/issues) if you're willing to help
 
@@ -9,10 +12,10 @@ Check Securix [changelog.txt](https://update.securix.org/changelog/changelog.txt
 
 Installation instructions
 - download copy of Gentoo minimal install CD from [Securix website](https://mirror.securix.org/iso/), which is verified to be functional 
-- boot into install CD (for example in [VirtualBox](https://www.virtualbox.org/)) and execute: `wget securix.org/install.sh` (you will be redirected to HTTPS automatically)
+- boot into install CD (for example in [VirtualBox](https://www.virtualbox.org/)) and execute: `wget https://securix.org/install.sh`
 - then execute: `bash install.sh` and follow instructions
 
-All scripts are verified and signed by [Securix Code Sign](https://update.securix.org/certificates/securix-codesign.pub) key
+All scripts or hashes are signed by [Securix Code Sign](https://update.securix.org/certificates/securix-codesign.pub) key.
 
 Website
 [www.securix.org](https://www.securix.org)
