@@ -177,7 +177,7 @@ f_update() {
 
 ##############################################################################
 #
-# PATCH
+# PATCH - XXXX
 #
 ##############################################################################
 
@@ -195,7 +195,7 @@ f_patchcheck() {
         exit
     fi
     f_download ${SECURIXUPDATE}${SECURIXVERSION}/patch.sign
-    GNUPGHOME="/etc/portage/gnupg" gpg --verify patch.sign patch
+    gpg --homedir /etc/portage/gpg --verify patch.sign patch
     if [ $? -ne 0 ]; then
         f_msg error "--- Problem with signed package! Possible security incident or network issue"
         exit_on_error

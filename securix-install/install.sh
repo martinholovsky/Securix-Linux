@@ -666,11 +666,11 @@ f_download ${SX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc ${STAGE3BASEURL}${
 # initiate GPG environment
 f_download ${SECURIXFILES}/certificates/gentoo-gpg.pub ${SECURIXFILESDR}/certificates/gentoo-gpg.pub
 f_download ${SECURIXFILES}/certificates/gentoo-gpg.pub ${SECURIXFILESDR}/certificates/gentoo-gpg-autobuild.pub
-mkdir /etc/portage/gnupg
-chown 600 /etc/portage/gnupg
-GNUPGHOME="/etc/portage/gnupg" gpg --import gentoo-gpg.pub
-GNUPGHOME="/etc/portage/gnupg" gpg --fingerprint 0x96D8BF6D
-GNUPGHOME="/etc/portage/gnupg" gpg -u 0x96D8BF6D --verify ${STAGE3LATESTFILE}.DIGESTS.asc
+mkdir /etc/portage/gpg
+chown 700 /etc/portage/gpg
+gpg --homedir /etc/portage/gpg --import gentoo-gpg.pub
+gpg --homedir /etc/portage/gpg --fingerprint 0x96D8BF6D
+gpg --homedir /etc/portage/gpg -u 0x96D8BF6D --verify ${STAGE3LATESTFILE}.DIGESTS.asc
 if [ $? -ne 0 ]; then
     f_msg error "Gentoo GPG signature of stage3 file do not match !!"
     exit_on_error
@@ -698,7 +698,7 @@ f_download ${SX_PORTAGEFILE} ${PORTAGEFILE}
 statusd=$?
 f_download ${SX_PORTAGEFILE}.md5sum ${PORTAGEFILE}.md5sum
 f_download ${SX_PORTAGEFILE}.gpgsig ${PORTAGEFILE}.gpgsig
-GNUPGHOME="/etc/portage/gnupg" gpg -u 0x2D182910 --verify ${SX_PORTAGEFILE##*/}.gpgsig
+gpg --homedir /etc/portage/gpg -u 0x2D182910 --verify ${SX_PORTAGEFILE##*/}.gpgsig
 if [ $? -ne 0 ]; then
     f_msg error "Gentoo GPG signature of Portage file do not match !!"
     exit_on_error

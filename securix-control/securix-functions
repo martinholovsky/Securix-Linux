@@ -35,7 +35,7 @@ SECURIXUPDATEDR="https://securix.sourceforge.net"
 SECURIXID=""
 
 LOCKFILE="/root/securix.lock"
-GNUPGHOME="/etc/portage/gnupg"
+GNUPGHOME="/etc/portage/gpg"
 txtred='\e[0;31m'
 txtblue='\e[1;34m'
 txtgreen='\e[0;32m'
