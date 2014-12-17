@@ -5,7 +5,13 @@
 #
 #-#
 
-RELEASE: 20141207
+RELEASE: 20141217
+    
+- fixed issue #56 make.conf - user vs securix separation
+- fixed issue #51 improved network interface selection
+- fixed issue #49 GPG webrsync verification
+
+RELEASE: 20141216
     
 - attempt to use GIT as main repository
 
