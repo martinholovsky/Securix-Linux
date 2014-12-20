@@ -352,19 +352,15 @@ if [ $# -gt 0 ]; then
             -s|--skip|--skipsign)
                 SKIPSIGN="yes"
                 ;;
-            -c=|--conf=|--config=)
+            "--c="*|"--conf="*|"--config="*)
                 CONFIGFILE=${argument#*=}
                 AUTOBUILD="yes"
+                f_msg info "Sourcing configuration file: ${CONFIGFILE}"
                 if [ -f "$CONFIGFILE" ]; then
                     source ${CONFIGFILE}
                 else
                     f_download ${CONFIGFILE}
                     source ${CONFIGFILE##*/}
-                    if [ $? -ne 0 ]; then
-                        f_msg error "There was a problem with load of configuration file"
-                        f_msg info "usage: ./install.sh --config=local.file or --config=http://server/config.file"
-                        exit_on_error
-                    fi
                 fi
                 ;;
         esac
