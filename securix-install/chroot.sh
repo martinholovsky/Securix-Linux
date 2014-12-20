@@ -250,19 +250,19 @@ fi
 
 # Check SMART capability
 f_msg info "###-### Step: Checking for S.M.A.R.T. capability ---"
-DISKTYPE=$(smartctl --scan | grep ${device} | cut -d' ' -f3)
-SMARTSTATUS=$(smartctl -i -d ${DISKTYPE} ${device})
+DISKTYPE=$(smartctl --scan | grep ${DEVICE} | cut -d' ' -f3)
+SMARTSTATUS=$(smartctl -i -d ${DISKTYPE} ${DEVICE})
 if [[ "$SMARTSTATUS" =~ "SMART support is: Available" ]]; then
-    f_msg info "--- Device ${device} support S.M.A.R.T."
-    smartctl -s on -d ${DISKTYPE} ${device}
+    f_msg info "--- Device ${DEVICE} support S.M.A.R.T."
+    smartctl -s on -d ${DISKTYPE} ${DEVICE}
     sed -i 's/^DEVICESCAN/#DEVICESCAN/g' /etc/smartd.conf
     # monitor disk and run short self-test every day at 2AM, long test on Sunday at 4AM
-    echo "${device} -d ${DISKTYPE} -a -I 194 -W 4,45,60 -R 5 -s (S/../.././02|L/../../7/04) -m root" >> /etc/smartd.conf
+    echo "${DEVICE} -d ${DISKTYPE} -a -I 194 -W 4,45,60 -R 5 -s (S/../.././02|L/../../7/04) -m root" >> /etc/smartd.conf
     SMARTSUPPORT="yes"
     rc-update add smartd default
     f_msg info "--- S.M.A.R.T. enabled and monitoring has been setup"
 else
-    f_msg info "--- Device ${device} doesnt support S.M.A.R.T."
+    f_msg info "--- Device ${DEVICE} doesnt support S.M.A.R.T."
     SMARTSUPPORT="no"
 fi
 
@@ -290,7 +290,7 @@ root (hd0,0)
 
 if [ "$USELVM" = "yes" -a "$USELUKS" = "yes" ]; then
 cat >> /boot/grub/grub.conf << !EOF
-kernel (hd0,0)/${KERNELIMG} root=/dev/ram0 init=/linuxrc ramdisk=8192 crypt_root=${device}3 real_root=${MAPPER}root dolvm ${GRUBOPTS}
+kernel (hd0,0)/${KERNELIMG} root=/dev/ram0 init=/linuxrc ramdisk=8192 crypt_root=${DEVICE}3 real_root=${MAPPER}root dolvm ${GRUBOPTS}
 initrd (hd0,0)/${INITRAMIMG}
 !EOF
 fi
@@ -304,19 +304,19 @@ fi
 
 if [ "$USELVM" = "no" -a "$USELUKS" = "yes" ]; then
 cat >> /boot/grub/grub.conf << !EOF
-kernel (hd0,0)/${KERNELIMG} root=/dev/ram0 init=/linuxrc ramdisk=8192 crypt_root=${device}3 real_root=${ROOTPV} ${GRUBOPTS}
+kernel (hd0,0)/${KERNELIMG} root=/dev/ram0 init=/linuxrc ramdisk=8192 crypt_root=${DEVICE}3 real_root=${ROOTPV} ${GRUBOPTS}
 initrd (hd0,0)/${INITRAMIMG}
 !EOF
 fi
 
 if [ "$USELVM" = "no" -a "$USELUKS" = "no" ]; then
 cat >> /boot/grub/grub.conf << !EOF
-kernel (hd0,0)/${KERNELIMG} root=${device}3 ${GRUBOPTS}
+kernel (hd0,0)/${KERNELIMG} root=${DEVICE}3 ${GRUBOPTS}
 !EOF
 fi
 
 grep -v rootfs /proc/mounts > /etc/mtab
-grub-install --no-floppy $device
+grub-install --no-floppy $DEVICE
 
 
 # Securix system configuration

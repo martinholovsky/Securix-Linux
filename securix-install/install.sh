@@ -47,27 +47,38 @@ esac
 #
 # VARIABLES
 #
+# You can change any variable if you will define it before script execution (e.g. VAR1=A VAR2=B ./install.sh)
+# Or import configuration file by ./install.sh --config=/path/to/file || --config=https://server/config.file
+#
+# It is a must for autobuild to change ROOT_PASSWORD, ROOT_PASSWORD2 and verify that default "System setup" fit your system
+#
+# VARIABLE=${VARIABLE:-"Default value"}
 ##############################################################################
 
-SX_STAGE3BASEURL="https://mirror.securix.org/releases/${ARCH}/autobuilds/"
-SX_STAGE3LATESTTXT="latest-stage3-${SUBARCH}-hardened.txt"
-SX_PORTAGEFILE="https://mirror.securix.org/releases/snapshots/current/portage-latest.tar.bz2"
+SX_STAGE3BASEURL=${SX_STAGE3BASEURL:-"https://mirror.securix.org/releases/${ARCH}/autobuilds/"}
+SX_STAGE3LATESTTXT=${SX_STAGE3LATESTTXT:-"latest-stage3-${SUBARCH}-hardened.txt"}
+SX_PORTAGEFILE=${SX_PORTAGEFILE:-"https://mirror.securix.org/releases/snapshots/current/portage-latest.tar.bz2"}
 # gentoo servers usually do not use https and if so, it is just self-signed certificate
-STAGE3BASEURL="http://distfiles.gentoo.org/releases/${ARCH}/autobuilds/"
-STAGE3LATESTTXT="latest-stage3-${SUBARCH}-hardened.txt"
-PORTAGEFILE="http://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2"
-SECURIXFILES="https://update.securix.org"
-SECURIXFILESDR="http://securix.sourceforge.net"
-GMIRROR="http://ftp.fi.muni.cz/pub/linux/gentoo/"
+STAGE3BASEURL=${STAGE3BASEURL:-"http://distfiles.gentoo.org/releases/${ARCH}/autobuilds/"}
+STAGE3LATESTTXT=${STAGE3LATESTTXT:-"latest-stage3-${SUBARCH}-hardened.txt"}
+PORTAGEFILE=${PORTAGEFILE:-"http://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2"}
+SECURIXFILES=${SECURIXFILES:-"https://update.securix.org"}
+SECURIXFILESDR=${SECURIXFILESDR:-"http://securix.sourceforge.net"}
+SECURIXSYSTEMCONF=${SECURIXSYSTEMCONF:-"/install/conf.tar.gz"}
+SECURIXCHROOT=${SECURIXCHROOT:-"/install/chroot.sh"}
+KERNELCONFIG=${KERNELCONFIG:-"/install/kernel/hardened-${ARCH}.config"}
+GMIRROR=${GMIRROR:-"http://ftp.fi.muni.cz/pub/linux/gentoo/"}
 CPUS=$(grep -c '^processor' /proc/cpuinfo)
 MOPTS=$((CPUS + 1))
-GENKERNEL="--install --symlink --save-config --makeopts=-j${MOPTS} --kernname=securix --kernel-config=/hardened-kernel.config"
-GRUBOPTS="vga=791 quiet"
+GENKERNEL=${GENKERNEL:-"--install --symlink --save-config --makeopts=-j${MOPTS} --kernname=securix --kernel-config=/hardened-kernel.config"}
+GRUBOPTS=${GRUBOPTS:-"vga=791 quiet"}
 SECURIXID=$(ifconfig -a | sha1sum | awk '{ print $1 }')
-LOGFILE="/root/securix-install.log"
-LOCKFILE="/root/securix.lock"
-CHROOTOK="/mnt/gentoo/chroot.ok"
-USER_PASSWORD="pass${RANDOM}"
+INTERFACES=$(ifconfig -a | grep -c eth)
+INTERFACES_FOUND=$(ifconfig -a | grep -E '^*: ' | cut -d: -f1 | grep -vE '^lo')
+LOGFILE=${LOGFILE:-"/root/securix-install.log"}
+LOCKFILE=${LOCKFILE:-"/root/securix.lock"}
+CHROOTOK=${CHROOTOK:-"/mnt/gentoo/chroot.ok"}
+USER_PASSWORD=${USER_PASSWORD:-"pass${RANDOM}"}
 txtred='\e[0;31m'
 txtblue='\e[1;34m'
 txtgreen='\e[0;32m'
@@ -75,17 +86,67 @@ txtwhite='\e[0;37m'
 txtdefault='\e[00m'
 txtyellow='\e[0;33m'
 # partitioning
-PBOOTS="+256M"
-DISKMIN=18000000000
-DISKOPTIM=38000000000
-BOOTOPTS="noauto,relatime,nodiratime"
-ROOTOPTS="defaults,relatime,nodiratime"
-USROPTS="defaults,relatime,nodiratime,nodev"
-HOMEOPTS="defaults,relatime,nodiratime,nodev,nosuid"
-OPTOPTS="defaults"
-VAROPTS="defaults,relatime,nodiratime,nodev,nosuid,noexec"
-PORTAGEOPTS="defaults,relatime,nodiratime,nodev,nosuid"
-TMPOPTS="defaults,relatime,nodiratime,nodev,nosuid,noexec"
+PBOOTS=${PBOOTS:-"+256M"}
+DISKMIN=${DISKMIN:-18000000000}
+DISKOPTIM=${DISKOPTIM:-38000000000}
+BOOTOPTS=${BOOTOPTS:-"noauto,relatime,nodiratime"}
+ROOTOPTS=${ROOTOPTS:-"defaults,relatime,nodiratime"}
+USROPTS=${USROPTS:-"defaults,relatime,nodiratime,nodev"}
+HOMEOPTS=${HOMEOPTS:-"defaults,relatime,nodiratime,nodev,nosuid"}
+OPTOPTS=${OPTOPTS:-"defaults"}
+VAROPTS=${VAROPTS:-"defaults,relatime,nodiratime,nodev,nosuid,noexec"}
+PORTAGEOPTS=${PORTAGEOPTS:-"defaults,relatime,nodiratime,nodev,nosuid"}
+TMPOPTS=${TMPOPTS:-"defaults,relatime,nodiratime,nodev,nosuid,noexec"}
+
+#
+# System setup for autobuild
+#
+
+SECURIX_HOSTNAME=${SECURIX_HOSTNAME:-"securix"}
+# change root password, s3cur1x can't be used
+ROOT_PASSWORD=${ROOT_PASSWORD:-"s3cur1x"}
+ROOT_PASSWORD2=${ROOT_PASSWORD2:-"s3cur1x"}
+# default mail address for system notifications, better is group mail address
+ROOT_MAIL=${ROOT_MAIL:-root}
+# define mail server hostname, default is mail = based on MX records
+MAIL_HOST=${MAIL_HOST:-mail}
+# running under virtual? if not, default Securix kernel will be used in autobuild
+VIRTUAL=${VIRTUAL:-"yes"}
+# if so, possible options: VIRTUALBOX, KVM, XEN, VMWARE
+VIRTUALHOST=${VIRTUALHOST:-"VIRTUALBOX"}
+# specify device where to install Securix
+DEVICE=${DEVICE:-"/dev/sda"}
+# format destination DEVICE?
+DELETEDISK=${DELETEDISK:-"yes"}
+# use full disk encryption? (LUKS) cant be automated
+USELUKS=${USELUKS:-"no"}
+# do you want to setup bonding?
+BONDING=${BONDING:-"no"}
+# set only if BONDING is yes
+BONDINGMODE=${BONDINGMODE:-"1"}
+BONDINGSLAVE=${BONDINGSLAVE:-"eth0 eth1"}
+# Manual setup? no = DHCP
+NETMANUAL=${NETMANUAL:-"no"}
+# use DHCP?
+USEDHCP=${USEDHCP:-"yes"}
+# network interface name
+if [ $INTERFACES -eq 1 ]; then
+    NETETH=${INTERFACES_FOUND}
+else
+    NETETH=${NETETH:-"eth0"}
+fi
+# set all the rest only if NETMANUAL is "no"
+NETIP=${NETIP:-"192.168.100.100"}
+NETMASK=${NETMASK:-"255.255.255.0"}
+NETGATEWAY${NETGATEWAY:-"192.168.100.1"}
+# primary and secondary DNS server
+NETDNS=${NETDNS:-"8.8.8.8"}
+NETDNS2=${NETDNS2:-"8.8.4.4"}
+# server domain
+NETDOMAIN=${NETDOMAIN:-"securix.local"}
+# primary and secondary NTP server
+NETNTP=${NETNTP:-"0.gentoo.pool.ntp.org"}
+NETNTP2=${NETNTP2:-"1.gentoo.pool.ntp.org"}
 
 
 ##############################################################################
@@ -96,44 +157,56 @@ TMPOPTS="defaults,relatime,nodiratime,nodev,nosuid,noexec"
 
 f_yesno() {
     #example: f_yesno "Are you sure?" variable
-    local answer
-    echo -ne "${txtblue}» Q: ${1} (yes/NO): ${txtdefault}"
-    read answer
-    case "$answer" in
-        y|Y|yes|YES|Yes) yesno="yes" ;;
-        *) yesno="no" ;;
-    esac
-    if [ ! -z "$2" ]; then
-        eval $2="$yesno"
+    if [ "$AUTOBUILD" != "yes" ]; then
+        local answer
+        echo -ne "${txtblue}» Q: ${1} (yes/NO): ${txtdefault}"
+        read answer
+        case "$answer" in
+            y|Y|yes|YES|Yes) yesno="yes" ;;
+            *) yesno="no" ;;
+        esac
+        if [ ! -z "$2" ]; then
+            eval $2="$yesno"
+        fi
+    else
+        echo -e "AUTOBUILD: ${txtblue}» Q: ${1} ${2} ${txtdefault}"
     fi
 }
 
 f_getvar() {
     #example: f_getvar "Your name?" variable "default value"
-    local answer
-    echo -ne "${txtblue}» Q: ${1} ${txtdefault}"
-    read answer
-    #set default when null
-    if [ -z "$answer" ]; then
-        local defaultvar=${3:?Error answer and default value is null}
-        eval $2="$3"
+    if [ "$AUTOBUILD" != "yes" ]; then
+        local answer
+        echo -ne "${txtblue}» Q: ${1} ${txtdefault}"
+        read answer
+        #set default when null
+        if [ -z "$answer" ]; then
+            local defaultvar=${3:?Error answer and default value is null}
+            eval $2="$3"
+        else
+            eval $2="$answer"
+        fi
     else
-        eval $2="$answer"
+        echo -e "AUTOBUILD: ${txtblue}» Q: ${1} ${2} ${3} ${txtdefault}"
     fi
 }
 
 f_getpass() {
     #example: f_getpass "Service password:" variable "default value"
-    local answer
-    echo -ne "${txtblue}» ${1} ${txtdefault}"
-    read -s -p "" answer
-    f_msg newline
-    #set default when null
-    if [ -z "$answer" ]; then
-        local defaultvar=${3:?Error answer and default value is null}
-        eval $2="$3"
+    if [ "$AUTOBUILD" != "yes" ]; then
+        local answer
+        echo -ne "${txtblue}» ${1} ${txtdefault}"
+        read -s -p "" answer
+        f_msg newline
+        #set default when null
+        if [ -z "$answer" ]; then
+            local defaultvar=${3:?Error answer and default value is null}
+            eval $2="$3"
+        else
+            eval $2="$answer"
+        fi
     else
-        eval $2="$answer"
+        echo -e "AUTOBUILD: ${txtblue}» ${1} ${txtdefault}"
     fi
 }
 
@@ -168,7 +241,7 @@ f_download() {
     rm -f ${downfile} ${backupfile}
     echo "Downloading: ${downlink}"
     echo -n "Status:     "
-    # wget version in gentoo minimal CD do not support PFS :( and https-only
+    # wget version in gentoo minimal CD do not support PFS and https-only :(
     wget --timeout=30 --no-cache --progress=dot -O "${downfile}" "${downlink}" 2>&1 | grep --line-buffered "%" | \
         sed -u -e "s,\.,,g" | awk '{printf("\b\b\b\b%4s", $2)}'
     if [ $? -ne 0 ]; then
@@ -267,6 +340,38 @@ exit_on_error() {
 #
 ##############################################################################
 
+# parse command line arguments (if any)
+unset AUTOBUILD CONFIGFILE SKIPSIGN
+
+if [ $# -gt 0 ]; then
+    for argument in "$@"; do
+        case "$argument" in
+            -a|--auto|--autobuild)
+                AUTOBUILD="yes"
+                ;;
+            -s|--skip|--skipsign)
+                SKIPSIGN="yes"
+                ;;
+            -c=|--conf=|--config=)
+                CONFIGFILE=${argument#*=}
+                AUTOBUILD="yes"
+                if [ -f "$CONFIGFILE" ]; then
+                    source ${CONFIGFILE}
+                else
+                    f_download ${CONFIGFILE}
+                    source ${CONFIGFILE##*/}
+                    if [ $? -ne 0 ]; then
+                        f_msg error "There was a problem with load of configuration file"
+                        f_msg info "usage: ./install.sh --config=local.file or --config=http://server/config.file"
+                        exit_on_error
+                    fi
+                fi
+                ;;
+        esac
+    done
+fi
+
+
 # banner
 clear
 echo -e "
@@ -288,14 +393,14 @@ sleep 1
 # check permissions
 if [ $EUID -ne 0 ]; then
     f_msg error "This script must be run as root."
-    exit 1
+    exit_on_error
 fi
 
 # lockfile
 if [ -f $LOCKFILE ]; then
     f_msg error "It seems that there is already running Securix installer... exiting"
     f_msg info "If youre sure what youre doing, you can execute: rm -f ${LOCKFILE}"
-    exit 1
+    exit_on_error
 else
     touch $LOCKFILE
 fi
@@ -311,24 +416,39 @@ that you have problem with your Internet connectivity."
 fi
 
 # verifying securix installer
-f_msg warn "Verifying signature of installation script..."
-f_download ${SECURIXFILES}/install/install.sh.sign ${SECURIXFILESDR}/install/install.sh.sign
-f_download ${SECURIXFILES}/certificates/securix-codesign.pub ${SECURIXFILESDR}/certificates/securix-codesign.pub
-openssl dgst -sha512 -verify securix-codesign.pub -signature install.sh.sign ${BASH_SOURCE}
-f_msg newline
+if [ "$SKIPSIGN" != "yes" ]; then
+    f_msg warn "Verifying signature of installation script..."
+    f_download ${SECURIXFILES}/install/install.sh.sign ${SECURIXFILESDR}/install/install.sh.sign
+    f_download ${SECURIXFILES}/certificates/securix-codesign.pub ${SECURIXFILESDR}/certificates/securix-codesign.pub
+    openssl dgst -sha512 -verify securix-codesign.pub -signature install.sh.sign ${BASH_SOURCE}
+    if [ $? -ne 0 ]; then
+        f_msg error "Verification failed!"
+        f_msg warn "If YOU modified install script, you can skip this check by ./install.sh --skipsign"
+        exit_on_error
+    fi
+    f_msg newline
+else
+    f_msg warn "Skipping install script signature check (not recommended)"
+fi
 
 f_msg info "-:-:[ Please setup system details ]:-:-"
 f_msg newline
 
 # setup hostname
-f_getvar "Hostname [default: securix]: " SECURIX_HOSTNAME "securix"
+f_getvar "Hostname [default: ${SECURIX_HOSTNAME}]: " SECURIX_HOSTNAME "${SECURIX_HOSTNAME}"
 
 # setup root password
+unset passmatch
 until [ "$passmatch" = "ok" ]; do
-f_getpass "ROOT password/phrase [default: s3cur1x]: " ROOT_PASSWORD "s3cur1x"
-f_getpass "ROOT password/phrase one more time [default: s3cur1x]: " ROOT_PASSWORD2 "s3cur1x"
+f_getpass "Please enter ROOT password/phrase: " ROOT_PASSWORD "${ROOT_PASSWORD}"
+f_getpass "Please enter ROOT password/phrase one more time: " ROOT_PASSWORD2 "${ROOT_PASSWORD2}"
+
 if [ "$ROOT_PASSWORD" = "$ROOT_PASSWORD2" ]; then
-    passmatch="ok"
+    if [ "$ROOT_PASSWORD" != "s3cur1x" ]; then
+        passmatch="ok"
+    else
+        f_msg warn "Do not use default root password! Create your own and save it in KeePass (for example)"
+    fi
 else
     f_msg warn "Password mismatch! Try it one more time..."
     f_msg newline
@@ -336,10 +456,10 @@ fi
 done
 
 # setup root mail address
-f_getvar "MAIL address for system notifications [default: root, but should be some mail group]: " ROOT_MAIL "root"
+f_getvar "MAIL address or better group for system notifications [default: ${ROOT_MAIL}]: " ROOT_MAIL "${ROOT_MAIL}"
 f_msg info "Now please specify outgoing mail server and username/password if needed"
 f_msg info "Example format: smtp.gmail.com:587 mymail@gmail.com mypassword"
-f_getvar "MAIL server/gateway [default: mail (domain.com)]: " MAIL_HOST "mail"
+f_getvar "MAIL server/gateway [default: ${MAIL_HOST}]: " MAIL_HOST "${MAIL_HOST}"
 
 # check serial
 f_dmesg ttyS USERSERIAL
@@ -387,9 +507,7 @@ else
 fi
 
 # setup networking
-interfaces=$(ifconfig -a | grep -c eth)
-interfaces_found=$(ifconfig -a | grep -E '^*: ' | cut -d: -f1 | grep -vE '^lo')
-if [ $interfaces -ne 1 ]; then
+if [ $INTERFACES -ne 1 ]; then
     f_yesno "Multiple ethernets found. Do you want setup bonding?" BONDING
 fi
 
@@ -400,13 +518,13 @@ if [ -z "$BONDING" -o "$BONDING" = "no" ]; then
     if [ "$NETMANUAL" = "no" ]; then
         
         # dhcp
-        if [ $interfaces -eq 1 ]; then
-            f_msg info "-- Interfaces found in system: ${interfaces_found}"
-            f_getvar "Specify interface [default: ${interfaces_found}]: " NETETH "${interfaces_found}"
+        if [ $INTERFACES -eq 1 ]; then
+            f_msg info "-- Interfaces found in system: ${INTERFACES_FOUND}"
+            f_getvar "Specify interface [default: ${INTERFACES_FOUND}]: " NETETH "${INTERFACES_FOUND}"
             USEDHCP="yes"
         else
-            f_msg info "-- Interfaces found in system: ${interfaces_found}"
-            f_getvar "Specify interface [default: eth0]: " NETETH "eth0"
+            f_msg info "-- Interfaces found in system: ${INTERFACES_FOUND}"
+            f_getvar "Specify interface [default: ${NETETH}]: " NETETH "${NETETH}"
             USEDHCP="yes"
         fi
     else
@@ -417,15 +535,15 @@ if [ -z "$BONDING" -o "$BONDING" = "no" ]; then
         f_msg info "Routing:"
         route -n | grep -vE 'Kernel|127.0.0.1'
         f_msg newline
-        f_getvar "Specify interface [default: eth0]: " NETETH "eth0"
-        f_getvar "Specify IP address [192.168.1.100]: " NETIP "192.168.1.100"
-        f_getvar "Specify netmask [255.255.255.0]: " NETMASK "255.255.255.0"
-        f_getvar "Specify default gateway [192.168.1.1]: " NETGATEWAY "192.168.1.1"
-        f_getvar "Specify primary DNS server [8.8.8.8]: " NETDNS "8.8.8.8"
-        f_getvar "Specify secondary DNS server [8.8.4.4]: " NETDNS2 "8.8.4.4"
-        f_getvar "Specify domain name [securix.local]: " NETDOMAIN "securix.local"
-        f_getvar "Specify primary NTP server [0.gentoo.pool.ntp.org]" NETNTP "0.gentoo.pool.ntp.org"
-        f_getvar "Specify secondary NTP server [1.gentoo.pool.ntp.org]" NETNTP2 "1.gentoo.pool.ntp.org"
+        f_getvar "Specify interface [default: ${NETETH}]: " NETETH "${NETETH}"
+        f_getvar "Specify IP address [${NETIP}]: " NETIP "${NETIP}"
+        f_getvar "Specify netmask [${NETMASK}]: " NETMASK "${NETMASK}"
+        f_getvar "Specify default gateway [${NETGATEWAY}]: " NETGATEWAY "${NETGATEWAY}"
+        f_getvar "Specify primary DNS server [${NETDNS}]: " NETDNS "${NETDNS}"
+        f_getvar "Specify secondary DNS server [${NETDNS2}]: " NETDNS2 "${NETDNS2}"
+        f_getvar "Specify domain name [${NETDOMAIN}: " NETDOMAIN "${NETDOMAIN}"
+        f_getvar "Specify primary NTP server [${NETNTP}]" NETNTP "${NETNTP}"
+        f_getvar "Specify secondary NTP server [${NETNTP2}" NETNTP2 "${NETNTP2}"
     fi
 fi
 
@@ -442,16 +560,16 @@ if [ "$BONDING" = "yes" ]; then
         NETETH="bond0"
         f_msg info "Please select bonding mode number: 0-balance-rr, 1-active-backup, 2-balance-xor, 3-broadcast, 4-802.3ad, 5-balance-tlb, 6-balance-alb"
         f_msg info "Recommended: 1-Active/Backup (+fault tolerance) OR 0-Round Robin (+load balancing, +fault tolerance, -need setup etherchannel on switch)"
-        f_getvar "Specify bonding mode [default: 1]: " BONDINGMODE "1"
-        f_getvar "Specify bonding slave interfaces [eth0 eth1]: " BONDINGSLAVE "eth0 eth1"
-        f_getvar "Specify IP address [192.168.1.100]: " NETIP "192.168.1.100"
-        f_getvar "Specify netmask [255.255.255.0]: " NETMASK "255.255.255.0"
-        f_getvar "Specify default gateway [192.168.1.1]: " NETGATEWAY "192.168.1.1"
-        f_getvar "Specify DNS server [8.8.8.8]: " NETDNS "8.8.8.8"
-        f_getvar "Specify secondary DNS server [8.8.4.4]: " NETDNS2 "8.8.4.4"
-        f_getvar "Specify domain name [securix.local]: " NETDOMAIN "securix.local"
-        f_getvar "Specify primary NTP server [0.gentoo.pool.ntp.org]" NETNTP "0.gentoo.pool.ntp.org"
-        f_getvar "Specify secondary NTP server [1.gentoo.pool.ntp.org]" NETNTP2 "1.gentoo.pool.ntp.org"
+        f_getvar "Specify bonding mode [default: ${BONDINGMODE}]: " BONDINGMODE "${BONDINGMODE}"
+        f_getvar "Specify bonding slave interfaces [${BONDINGSLAVE}]: " BONDINGSLAVE "${BONDINGSLAVE}"
+        f_getvar "Specify IP address [${NETIP}]: " NETIP "${NETIP}"
+        f_getvar "Specify netmask [${NETMASK}]: " NETMASK "${NETMASK}"
+        f_getvar "Specify default gateway [${NETGATEWAY}]: " NETGATEWAY "${NETGATEWAY}"
+        f_getvar "Specify primary DNS server [${NETDNS}]: " NETDNS "${NETDNS}"
+        f_getvar "Specify secondary DNS server [${NETDNS2}]: " NETDNS2 "${NETDNS2}"
+        f_getvar "Specify domain name [${NETDOMAIN}: " NETDOMAIN "${NETDOMAIN}"
+        f_getvar "Specify primary NTP server [${NETNTP}]" NETNTP "${NETNTP}"
+        f_getvar "Specify secondary NTP server [${NETNTP2}" NETNTP2 "${NETNTP2}"
     fi
 fi
 
@@ -462,18 +580,18 @@ f_yesno "Are you OK with that?" USELUKS
 
 # create partitions
 f_msg info "-- We must setup partitions. All data on destination device will be deleted!!"
-f_getvar "Please specify device which should be used for Securix installation [default: /dev/sda]: " device "/dev/sda"
+f_getvar "Please specify device which should be used for Securix installation [default: ${DEVICE}]: " DEVICE "${DEVICE}"
 
-echo "--- Selected device: ${device}"
+echo "--- Selected device: ${DEVICE}"
 
-if [ ! -b "${device}" ]; then
-    f_msg error "Error: ${device} is not block device"
+if [ ! -b "${DEVICE}" ]; then
+    f_msg error "Error: ${DEVICE} is not block device"
     exit_on_error
 fi
 
 f_msg info "### Is it this one?"
 echo "---"
-fdisk -l $device | grep -E "Disk|${device}"
+fdisk -l $DEVICE | grep -E "Disk|${DEVICE}"
 echo "---"
 
 f_yesno "WARNING: ALL DATA WILL BE LOST! Are you OK with that?" DELETEDISK
@@ -502,7 +620,7 @@ elif [ $SWAPCOUNT -ge 4200000 ] && [ $SWAPCOUNT -le 8200000 ]; then
 fi
 
 f_msg info "###-### Step: Sizing logical volumes ---"
-DISKSIZE=$(fdisk -l $device | grep "Disk ${device}" | awk '{print $5}')
+DISKSIZE=$(fdisk -l $DEVICE | grep "Disk ${DEVICE}" | awk '{print $5}')
 if [ $DISKSIZE -ne $DISKSIZE 2>/dev/null ]; then
     echo "DISKSIZE is not integer, value: ${DISKSIZE}"
     exit_on_error
@@ -531,7 +649,7 @@ o
 w
 !EOF
 
-bash -c "fdisk $device < fdisk.in" >> $LOGFILE 2>&1
+bash -c "fdisk $DEVICE < fdisk.in" >> $LOGFILE 2>&1
 
 # setup config for fdisk
 cat > fdisk.in << !EOF
@@ -561,30 +679,30 @@ q
 !EOF
 
 f_msg info "###-### Step: Creating partitions ---"
-bash -c "fdisk $device < fdisk.in" >> $LOGFILE 2>&1
+bash -c "fdisk $DEVICE < fdisk.in" >> $LOGFILE 2>&1
 # wait for successful disk sync
 sleep 3
 DISKSYNC="ok"
 
 f_msg info "###-### Step: Creating boot and swap filesystems ---"
-mkfs.ext2 -q ${device}1
-mkswap ${device}2 > /dev/null
-swapon ${device}2
+mkfs.ext2 -q ${DEVICE}1
+mkswap ${DEVICE}2 > /dev/null
+swapon ${DEVICE}2
 
 if [ "$USELUKS" = "yes" ]; then
     f_msg warn "--- Encrypting disk, please save your passphrase on secure place!"
     f_msg warn "--- Use KeePass or something else, because when you forget passphrase NOBODY will be able to recover data!"
     f_msg warn "--- Type YES if youre OK with that"
-    cryptsetup -c aes-xts-plain -y -s 512 -h whirlpool luksFormat ${device}3
+    cryptsetup -c aes-xts-plain -y -s 512 -h whirlpool luksFormat ${DEVICE}3
     f_msg warn "--- Type selected passphrase again to open encrypted partition"
-    cryptsetup luksOpen ${device}3 root
+    cryptsetup luksOpen ${DEVICE}3 root
     ROOTPV="/dev/mapper/root"
     MAPPER="/dev/mapper/vg-"
     GENKERNEL="${GENKERNEL} --luks"
     GENKERNELUSE="${GENKERNELUSE} cryptsetup"
     SYSTEMPACKAGE="${SYSTEMPACKAGE} cryptsetup"
 else
-    ROOTPV="${device}3"
+    ROOTPV="${DEVICE}3"
     MAPPER="/dev/vg/"
 fi
 
@@ -596,7 +714,7 @@ case $VOLUMES in
         f_msg info "###-### Step: Mounting partitions ---"
         mount ${ROOTVG} /mnt/gentoo
         mkdir /mnt/gentoo/boot
-        mount ${device}1 /mnt/gentoo/boot
+        mount ${DEVICE}1 /mnt/gentoo/boot
         ;;
     MINVOLUMES)
         f_msg info "###-### Step: Creating logical volumes ---"
@@ -641,7 +759,7 @@ if [ "$USELVM" = "yes" ]; then
     f_msg info "###-### Step: Mounting logical volumes ---"
     mount ${ROOTVG} /mnt/gentoo
     mkdir /mnt/gentoo/boot
-    mount ${device}1 /mnt/gentoo/boot
+    mount ${DEVICE}1 /mnt/gentoo/boot
     for mountpoint in usr home opt var tmp; do
         mkdir /mnt/gentoo/${mountpoint}
         mount ${MAPPER}${mountpoint} /mnt/gentoo/${mountpoint}
@@ -665,10 +783,11 @@ f_download ${SX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc ${STAGE3BASEURL}${
 
 # initiate GPG environment
 f_download ${SECURIXFILES}/certificates/gentoo-gpg.pub ${SECURIXFILESDR}/certificates/gentoo-gpg.pub
-f_download ${SECURIXFILES}/certificates/gentoo-gpg.pub ${SECURIXFILESDR}/certificates/gentoo-gpg-autobuild.pub
+f_download ${SECURIXFILES}/certificates/gentoo-gpg-autobuild.pub ${SECURIXFILESDR}/certificates/gentoo-gpg-autobuild.pub
 mkdir /etc/portage/gpg
-chown 700 /etc/portage/gpg
+chmod 700 /etc/portage/gpg
 gpg --homedir /etc/portage/gpg --import gentoo-gpg.pub
+gpg --homedir /etc/portage/gpg --import gentoo-gpg-autobuild.pub
 gpg --homedir /etc/portage/gpg --fingerprint 0x96D8BF6D
 gpg --homedir /etc/portage/gpg -u 0x96D8BF6D --verify ${STAGE3LATESTFILE}.DIGESTS.asc
 if [ $? -ne 0 ]; then
@@ -722,19 +841,18 @@ echo " DONE"
 rm -f ${SX_PORTAGEFILE##*/} *.md5sum
 
 f_msg info "###-### Step: Downloading Securix system configuration ---"
-f_download ${SECURIXFILES}/install/conf.tar.gz ${SECURIXFILESDR}/install/conf.tar.gz
+f_download ${SECURIXFILES}${SECURIXSYSTEMCONF} ${SECURIXFILESDR}${SECURIXSYSTEMCONF}
 
 f_msg info "###-### Step: Downloading CHROOT script ---"
-f_download ${SECURIXFILES}/install/chroot.sh ${SECURIXFILESDR}/install/chroot.sh
+f_download ${SECURIXFILES}${SECURIXCHROOT} ${SECURIXFILESDR}${SECURIXCHROOT}
 
 f_msg info "###-### Step: Downloading hardened kernel config ---"
-if [ "$VIRTUAL" != "yes" ]; then
+if [ "$VIRTUAL" != "yes" -a "$AUTOBUILD" != "yes" ]; then
     GENKERNEL="${GENKERNEL} --menuconfig"
 fi
 
-SX_KERNEL="kernel/hardened-${ARCH}.config"
-f_download ${SECURIXFILES}/install/${SX_KERNEL} ${SECURIXFILESDR}/install/${SX_KERNEL}
-mv ${SX_KERNEL##*/} hardened-kernel.config
+f_download ${SECURIXFILES}${KERNELCONFIG} ${SECURIXFILESDR}${KERNELCONFIG}
+mv ${KERNELCONFIG##*/} hardened-kernel.config
 
 f_msg info "###-### Step: Downloading SHA512 list ---"
 f_download ${SECURIXFILES}/install/sha512.hash ${SECURIXFILESDR}/install/sha512.hash
@@ -764,8 +882,11 @@ cat > /mnt/gentoo/etc/make.conf << !EOF
 #: file: /etc/make.conf
 #: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
 #
+# Do not make any changes in this file. Use /etc/portage/make.conf for customization
+#
 # Please consult /usr/share/portage/config/make.conf.example for a more
 # detailed example.
+#
 
 ACCEPT_KEYWORDS="$ARCH"
 CFLAGS="-march=native -O2 -fforce-addr -pipe"
@@ -822,18 +943,18 @@ SECURIXVERSION=""
 # /etc/fstab
 if [ "$USELVM" = "no" ]; then
     cat > /mnt/gentoo/etc/fstab << !EOF
-${device}1		/boot		ext2		${BOOTOPTS}	1 2
+${DEVICE}1		/boot		ext2		${BOOTOPTS}	1 2
 ${ROOTPV}		/		ext4		${ROOTOPTS}	0 1
-${device}2		none		swap		sw		0 0
+${DEVICE}2		none		swap		sw		0 0
 /dev/cdrom		/mnt/cdrom	auto		noauto,ro	0 0
 
 proc                    /proc           proc            defaults        0 0
 !EOF
 else
     cat > /mnt/gentoo/etc/fstab << !EOF
-${device}1		/boot		 ext2		${BOOTOPTS}	1 2
+${DEVICE}1		/boot		 ext2		${BOOTOPTS}	1 2
 ${MAPPER}root 	        /		 ext4		${ROOTOPTS}	0 1
-${device}2		none		 swap		sw		0 0
+${DEVICE}2		none		 swap		sw		0 0
 /dev/cdrom		/mnt/cdrom	 auto		noauto,ro	0 0
 # Logical volumes
 ${MAPPER}usr            /usr             ext4           ${USROPTS}      0 2
@@ -908,7 +1029,7 @@ MAIL_HOST="${MAIL_HOST}"
 USER_PASSWORD="${USER_PASSWORD}"
 NETETH="${NETETH}"
 NETIP="${NETIP}"
-device="${device}"
+DEVICE="${DEVICE}"
 KERNELPATH="${KERNELPATH}"
 http_proxy="${http_proxy}"
 ARCH="${ARCH}"
@@ -947,6 +1068,7 @@ else
     rm -f sha512.hash.sign
     rm -f securix-codesign.pub
     rm -f gentoo-gpg.pub
+    rm -f gentoo-gpg-autobuild.pub
 fi
 
 # umounting filesystems
