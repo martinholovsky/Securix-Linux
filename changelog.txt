@@ -5,6 +5,15 @@
 #
 #-#
 
+RELEASE: 20141220
+    
+- default password must be now changed by user #61
+- make.conf has been moved to /etc/make.conf
+- emerge-webrsync GPG verification fixed
+- improved network detection and pre-fill #51
+- introduced new options in install script
+- users can rewrite default variables in install script without script modification
+
 RELEASE: 20141217
     
 - fixed issue #56 make.conf - user vs securix separation
