@@ -308,7 +308,7 @@ f_validip() {
     set -- $ip
     # check that IP contain only numbers and dots
     if [[ "$ip" =~ "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$" ]]; then
-        
+
         # check each position parameter
         if [[ ${1} -le 255 && ${2} -le 255 && ${3} -le 255 && ${4} -le 255 ]]; then
             VALIDIP="yes"
@@ -512,7 +512,7 @@ if [ -z "$BONDING" -o "$BONDING" = "no" ]; then
     f_yesno "Do you want setup networking manually? [NO is DHCP]" NETMANUAL
 
     if [ "$NETMANUAL" = "no" ]; then
-        
+
         # dhcp
         if [ $INTERFACES -eq 1 ]; then
             f_msg info "-- Interfaces found in system: ${INTERFACES_FOUND}"
@@ -524,7 +524,7 @@ if [ -z "$BONDING" -o "$BONDING" = "no" ]; then
             USEDHCP="yes"
         fi
     else
-        
+
         # manual
         f_msg info "Current ifconfig:"
         ifconfig | grep -B 1 inet | grep -vE '127.0.0.1|Loopback'
@@ -814,7 +814,7 @@ f_download ${SX_PORTAGEFILE} ${PORTAGEFILE}
 statusd=$?
 f_download ${SX_PORTAGEFILE}.md5sum ${PORTAGEFILE}.md5sum
 f_download ${SX_PORTAGEFILE}.gpgsig ${PORTAGEFILE}.gpgsig
-gpg --homedir /etc/portage/gpg -u 0x2D182910 --verify ${SX_PORTAGEFILE##*/}.gpgsig
+gpg --homedir /etc/portage/gpg -u 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910 --verify ${SX_PORTAGEFILE##*/}.gpgsig
 if [ $? -ne 0 ]; then
     f_msg error "Gentoo GPG signature of Portage file do not match !!"
     exit_on_error
@@ -1011,9 +1011,9 @@ if [ -z "$NETIP" ]; then
     f_validip "${NETIP}"
     if [ "$VALIDIP" != "yes" ]; then
         unset NETIP
-    fi  
+    fi
 fi
-    
+
 # mounting proc and dev
 mount -t proc none /mnt/gentoo/proc
 mount --rbind /dev /mnt/gentoo/dev
