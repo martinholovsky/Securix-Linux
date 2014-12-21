@@ -7,6 +7,7 @@
 
 # rotate securix log
 /var/log/securix.log {
+    missingok
     sharedscripts
     postrotate
         /etc/init.d/syslog-ng reload > /dev/null 2>&1 || true
@@ -15,6 +16,8 @@
 
 # rotate firewall log
 /var/log/firewall.log {
+    missingok
+    daily
     sharedscripts
     postrotate
         /etc/init.d/syslog-ng reload > /dev/null 2>&1 || true
@@ -23,6 +26,27 @@
 
 # rotate rkhunter log
 /var/log/rkhunter.log {
+    missingok
+    sharedscripts
+    postrotate
+        /etc/init.d/syslog-ng reload > /dev/null 2>&1 || true
+    endscript
+}
+
+# rotate grsec log
+/var/log/grsec.log {
+    missingok
+    daily
+    sharedscripts
+    postrotate
+        /etc/init.d/syslog-ng reload > /dev/null 2>&1 || true
+    endscript
+}
+
+# rotate pax log
+/var/log/pax.log {
+    missingok
+    daily
     sharedscripts
     postrotate
         /etc/init.d/syslog-ng reload > /dev/null 2>&1 || true
