@@ -90,6 +90,19 @@ f_msg info "###-### Step: Running CHROOT script ---"
 # environment & profile
 env-update && source /etc/profile
 
+# import Gentoo GPG key
+f_msg info "###-### Step: Importing Gentoo GPG key ---"
+mkdir -p /etc/portage/gpg
+chmod 0700 /etc/portage/gpg
+gpg --homedir /etc/portage/gpg --import /usr/share/securix/gentoo-gpg.pub
+gpg --homedir /etc/portage/gpg --import /usr/share/securix/gentoo-gpg-autobuild.pub
+gpg --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
+gpg --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
+echo "PORTAGE_GPG_DIR=\"/etc/portage/gpg\"" >> /etc/make.conf
+echo "# Disable 'emerge --sync', so emerge-webrsync will be used" >> /etc/make.conf
+echo "SYNC=\"\"" >> /etc/make.conf
+sed -i 's/USE\=\"/USE\=\"webrsync-gpg /g' /etc/make.conf
+
 # locale and UTF-8 terminal
 f_msg info "###-### Step: Locale setup ---"
 cat > /etc/locale.gen << !EOF
@@ -345,26 +358,6 @@ done
 
 # set SECURIXID
 sed -i "/SECURIXID=/ c SECURIXID=\"${SECURIXID}\"" /usr/sbin/securix-functions
-
-# setup GPG check of Gentoo Portage tarball sign
-mkdir -p /etc/portage/gpg
-chmod 0700 /etc/portage/gpg
-
-# import Gentoo GPG key
-f_msg info "###-### Step: Importing Gentoo GPG key ---"
-gpg --homedir /etc/portage/gpg --import /usr/share/securix/gentoo-gpg.pub
-gpg --homedir /etc/portage/gpg --import /usr/share/securix/gentoo-gpg-autobuild.pub
-gpg --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
-gpg --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
-echo "PORTAGE_GPG_DIR=\"/etc/portage/gpg\"" >> /etc/make.conf
-echo "# Disable 'emerge --sync', so emerge-webrsync will be used" >> /etc/make.conf
-echo "SYNC=\"\"" >> /etc/make.conf
-sed -i 's/USE\=\"/USE\=\"webrsync-gpg /g' /etc/make.conf
-
-# import Securix GPG key
-#f_msg info "###-### Step: Importing Securix GPG key ---"
-#gpg --homedir /etc/portage/gpg --import /usr/share/securix/securix-gpg.pub
-#gpg --homedir /etc/portage/gpg --fingerprint 0x468388F3
 
 # checksec.sh
 chmod u+x /usr/local/bin/checksec.sh

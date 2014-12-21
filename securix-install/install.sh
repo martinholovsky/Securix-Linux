@@ -376,6 +376,7 @@ echo -e "
   \_____  \   / __ \  /  ____| |  ||  | \_  ___  \  |  | \  \/  /
   ______|  \ |  ___/  \  \___  |  ||  |  |  |_/  /  |  |  > || <
  /_________/  \_____\  \_____| |_____/   |__| |__\  |__| /__/\__\\
+
 \n
 ::: Securix GNU/Linux installer
 ::: www.securix.org
@@ -794,7 +795,7 @@ fi
 
 # check SHA512
 STAGE3SUM=$(sha512sum ${STAGE3LATESTFILE##*/})
-grep ${STAGE3SUM} ${STAGE3LATESTFILE##*/}.DIGESTS >/dev/null
+grep ${STAGE3SUM} ${STAGE3LATESTFILE##*/}.DIGESTS.asc >/dev/null
 statusc=$?
 if [ $statusd -ne 0 -o $statusc -ne 0 ]; then
     f_msg error "ERROR: There was problem with download or checksum of stage3 file. Exit codes: "
@@ -805,21 +806,20 @@ else
 fi
 
 f_msg info "###-### Step: Extracting stage ---"
-tar xjpf stage3-*.tar.bz2 --checkpoint=.1000
+tar xjpf ${STAGE3LATESTFILE##*/} --checkpoint=.1000
 echo " DONE"
-rm -f stage3-*.tar.bz2 ${STAGE3LATESTTXT} *.DIGESTS *.CONTENTS
+rm -f ${STAGE3LATESTFILE##*/} ${STAGE3LATESTTXT} *.DIGESTS *.CONTENTS *.asc
 
 f_msg info "###-### Step: Downloading Portage ---"
 f_download ${SX_PORTAGEFILE} ${PORTAGEFILE}
 statusd=$?
 f_download ${SX_PORTAGEFILE}.md5sum ${PORTAGEFILE}.md5sum
 f_download ${SX_PORTAGEFILE}.gpgsig ${PORTAGEFILE}.gpgsig
-gpg --homedir /etc/portage/gpg -u 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910 --verify ${SX_PORTAGEFILE##*/}.gpgsig
+gpg --homedir /etc/portage/gpg -u 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910 --verify ${SX_PORTAGEFILE##*/}.gpgsig ${SX_PORTAGEFILE##*/}
 if [ $? -ne 0 ]; then
     f_msg error "Gentoo GPG signature of Portage file do not match !!"
     exit_on_error
 fi
-
 
 # check MD5
 md5sum --status -c ${SX_PORTAGEFILE##*/}.md5sum
@@ -835,7 +835,7 @@ fi
 f_msg info "###-### Step: Extracting Portage ---"
 tar xmjf ${SX_PORTAGEFILE##*/} -C /mnt/gentoo/usr --checkpoint=.1000
 echo " DONE"
-rm -f ${SX_PORTAGEFILE##*/} *.md5sum
+rm -f ${SX_PORTAGEFILE##*/} *.md5sum *.gpgsig
 
 f_msg info "###-### Step: Downloading Securix system configuration ---"
 f_download ${SECURIXFILES}${SECURIXSYSTEMCONF} ${SECURIXFILESDR}${SECURIXSYSTEMCONF}
