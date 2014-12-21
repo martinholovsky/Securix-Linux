@@ -784,9 +784,9 @@ mkdir /etc/portage/gpg
 chmod 700 /etc/portage/gpg
 gpg --homedir /etc/portage/gpg --import gentoo-gpg.pub
 gpg --homedir /etc/portage/gpg --import gentoo-gpg-autobuild.pub
-gpg --homedir /etc/portage/gpg --fingerprint 0x96D8BF6D
-gpg --homedir /etc/portage/gpg --fingerprint 0x2D182910
-gpg --homedir /etc/portage/gpg -u 0x96D8BF6D --verify ${STAGE3LATESTFILE}.DIGESTS.asc
+gpg --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
+gpg --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
+gpg --homedir /etc/portage/gpg -u DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D --verify ${STAGE3LATESTFILE}.DIGESTS.asc
 if [ $? -ne 0 ]; then
     f_msg error "Gentoo GPG signature of stage3 file do not match !!"
     exit_on_error
