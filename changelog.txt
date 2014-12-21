@@ -5,6 +5,12 @@
 #
 #-#
 
+RELEASE: 20141221
+    
+- fixed issue #1 syslog-ng configuration
+- usage of long gpg fingerprints #64
+- couple of minor fixes
+
 RELEASE: 20141220
     
 - default password must be now changed by user #61
