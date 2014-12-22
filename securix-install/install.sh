@@ -379,7 +379,7 @@ f_basic_check() {
 
     # check networking
     wget --timeout=30 --delete-after -q http://www.google.com || google_check=$?
-    if [ $google_check -ne 0 ]; then
+    if [ ! -z "$google_check" ]; then
         f_msg error "ERROR: Unable to contact google.com!"
         f_msg info  "Yes, Google can be down, but Occam's Razor would suggest that you have problem with your Internet connectivity."
         f_msg info " --- Please setup http_proxy or fix network issue"
@@ -775,7 +775,7 @@ f_setup_stage3() {
     # changing context
     cd /mnt/gentoo
 
-    # download stage3 and portage
+    # download stage3
     f_msg info "###-### Step: Downloading hardened stage ---"
     f_download ${SX_STAGE3BASEURL}${STAGE3LATESTTXT} ${STAGE3BASEURL}${STAGE3LATESTTXT}
 
@@ -824,11 +824,14 @@ f_setup_portage() {
     # changing context
     cd /mnt/gentoo
     
+    # download portage
+    # portage is GPG verified 
     f_msg info "###-### Step: Downloading Portage ---"
     f_download ${SX_PORTAGEFILE} ${PORTAGEFILE}
     statusd=$?
     f_download ${SX_PORTAGEFILE}.md5sum ${PORTAGEFILE}.md5sum
     f_download ${SX_PORTAGEFILE}.gpgsig ${PORTAGEFILE}.gpgsig
+    # verify portage GPG
     gpg --homedir /etc/portage/gpg -u 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910 --verify ${SX_PORTAGEFILE##*/}.gpgsig ${SX_PORTAGEFILE##*/}
     if [ $? -ne 0 ]; then
         f_msg error "Gentoo GPG signature of Portage file do not match !!"
@@ -1164,11 +1167,11 @@ f_install_securix() {
     f_check_dmraid
     f_check_virtual
     f_ask_network
-    f_ask_disk_ecryption
+    f_ask_disk_encryption
     f_format_boot_swap
     f_size_logical_volumes
     f_create_partitions
-    f_setup_disk_ecnryption
+    f_setup_disk_encryption
     f_setup_volumes
     f_setup_lvm
     f_setup_stage3
