@@ -21,36 +21,27 @@
 
 
 # log each user command
-export PROMPT_COMMAND='{ logger -p local5.info "${HOSTNAME} [HIST] : ${SSH_CLIENT} : ${PWD} : $(history 1)"; }'
+declare -r PROMPT_COMMAND='{ logger -p local5.info "${HOSTNAME} [HIST] : ${SSH_CLIENT} : ${PWD} : $(history 1)"; }'
 
-# set basic bash variables for command history
-HISTFILE="${HOME}/.bash_history"
-HISTSIZE=10000
-HISTFILESIZE=100000
-HISTIGNORE=""
-HISTCONTROL=""
-#HISTTIMEFORMAT="%F %T "
+# set basic bash variables for command history, declare them as readonly
+declare -r HISTFILE="${HOME}/.bash_history"
+declare -ir HISTSIZE=10000
+declare -ir HISTFILESIZE=100000
+declare -r HISTIGNORE=""
+declare -r HISTCONTROL=""
+#declare -r HISTTIMEFORMAT="%F %T "
 
 shopt -s histverify
 shopt -s histappend
 
-# set timeout
-TMOUT=900
-
-# umask 
+# umask
 umask 027
 
-# avoid changing values
-readonly HOME
-readonly HISTFILE
-readonly HISTSIZE
-readonly HISTFILESIZE
-readonly HISTIGNORE
-readonly HISTCONTROL
-readonly PROMPT_COMMAND
-#readonly HISTTIMEFORMAT
+# if youre not root, TMOUT will be readonly
 if [ $EUID -ne 0 ]; then
-    readonly TMOUT
+    declare -ir TMOUT="900"
+else
+    TMOUT="900"
 fi
 
 # create HISTFILE if not exist

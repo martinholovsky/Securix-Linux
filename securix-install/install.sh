@@ -771,6 +771,21 @@ f_setup_lvm() {
     fi
 }
 
+f_setup_gentoo_gpg() {
+    
+    # initiate GPG environment
+    f_msg info "###-### Step: Importing Gentoo GPG keys ---"
+    f_download ${SECURIXFILES}/certificates/gentoo-gpg.pub ${SECURIXFILESDR}/certificates/gentoo-gpg.pub
+    f_download ${SECURIXFILES}/certificates/gentoo-gpg-autobuild.pub ${SECURIXFILESDR}/certificates/gentoo-gpg-autobuild.pub
+    mkdir /etc/portage/gpg
+    chmod 700 /etc/portage/gpg
+    gpg -quiet --homedir /etc/portage/gpg --import gentoo-gpg.pub
+    gpg -quiet --homedir /etc/portage/gpg --import gentoo-gpg-autobuild.pub
+    gpg -quiet --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
+    gpg -quiet --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
+    gpg -quiet --homedir /etc/portage/gpg -u DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D --verify ${STAGE3LATESTFILE##*/}.DIGESTS.asc
+}
+
 f_setup_stage3() {
     # changing context
     cd /mnt/gentoo
@@ -786,21 +801,6 @@ f_setup_stage3() {
     statusd=$?
     f_download ${SX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS ${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS
     f_download ${SX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc ${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc
-
-    # initiate GPG environment
-    f_download ${SECURIXFILES}/certificates/gentoo-gpg.pub ${SECURIXFILESDR}/certificates/gentoo-gpg.pub
-    f_download ${SECURIXFILES}/certificates/gentoo-gpg-autobuild.pub ${SECURIXFILESDR}/certificates/gentoo-gpg-autobuild.pub
-    mkdir /etc/portage/gpg
-    chmod 700 /etc/portage/gpg
-    gpg --homedir /etc/portage/gpg --import gentoo-gpg.pub
-    gpg --homedir /etc/portage/gpg --import gentoo-gpg-autobuild.pub
-    gpg --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
-    gpg --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
-    gpg --homedir /etc/portage/gpg -u DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D --verify ${STAGE3LATESTFILE##*/}.DIGESTS.asc
-    if [ $? -ne 0 ]; then
-        f_msg error "Gentoo GPG signature of stage3 file do not match !!"
-        exit_on_error
-    fi
 
     # check SHA512
     STAGE3SUM=$(sha512sum ${STAGE3LATESTFILE##*/})
@@ -943,7 +943,7 @@ f_setup_proxies() {
 
 f_setup_dns() {
     # DNS
-    if [ ! -z "$NETDNS" ]; then
+    if [ "$USEDHCP" = "no" ]; then
         echo "domain ${NETDOMAIN}" > /etc/resolv.conf
         echo "nameserver ${NETDNS}" >> /etc/resolv.conf
         echo "nameserver ${NETDNS2}" >> /etc/resolv.conf
@@ -1047,7 +1047,7 @@ routes_${NETETH}="default gw ${NETGATEWAY}"
 
 f_setup_fail2ban_ip() {
     # define NETIP for fail2ban
-    if [ -z "$NETIP" ]; then
+    if [ "$USEDHCP" = "yes" ]; then
         NETIP=$(ifconfig -a | grep inet | grep -v "127.0.0.1" | awk '{ print $2 }')
         f_validip "${NETIP}"
         if [ "$VALIDIP" != "yes" ]; then
@@ -1091,6 +1091,7 @@ SECURIXID="${SECURIXID}"
 SECURIX_HOSTNAME="${SECURIX_HOSTNAME}"
 VIRTUAL="${VIRTUAL}"
 VIRTUALHOST="${VIRTUALHOST}"
+AUTOBUILD="${AUTOBUILD}"
 !EOF
 }
 
@@ -1174,6 +1175,7 @@ f_install_securix() {
     f_setup_disk_encryption
     f_setup_volumes
     f_setup_lvm
+    f_setup_gentoo_gpg
     f_setup_stage3
     f_setup_portage
     f_download_securix_conf
@@ -1227,6 +1229,29 @@ for argument in "$@"; do
         -s|--skip|--skipsign)
             # if you must modify install script, use this option
             SKIPSIGN="yes"
+            ;;
+        -mountlvm)
+            # for debug purposes or when you forget root password
+            # mount Securix LVM partitions
+            f_getvar "Please specify disk with Securix installation (example: /dev/sda): " SXDISK
+            vgscan
+            vgchange -a y
+            f_msg info "--- Mounting /"
+            mount /dev/vg/root /mnt/gentoo
+            for mountpoint in usr home opt var tmp; do
+                f_msg info "--- Mounting /${mountpoint}"
+                mount /dev/vg/${mountpoint} /mnt/gentoo/${mountpoint}
+            done
+            mount ${SXDISK}1 /mnt/gentoo/boot
+            f_msg info "--- Changing context"
+            cd /mnt/gentoo
+            f_msg info "###-#### Youre now in Securix root folder (${PWD})"
+            exit
+            ;;
+        -mountluks)
+            # for debug purposes or when you forget root password
+            # mount Securix LVM partitions
+            
             ;;
     esac
 done

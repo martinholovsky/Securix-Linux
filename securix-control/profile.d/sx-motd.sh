@@ -20,8 +20,9 @@
 #
 
 
-# Check if standard input is a tty device (interactive shell).
+# Check if standard input is a tty device (interactive shell)
 if [ -t 0 -a "$TERM" != "dumb" ]; then
+    INTERACTIVE="yes"
     . /usr/sbin/securix-motd
 else
     return
