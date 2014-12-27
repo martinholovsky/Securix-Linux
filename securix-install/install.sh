@@ -23,7 +23,7 @@
 #
 
 # define arch and variables
-case "$HOSTTYPE" in
+case "${HOSTTYPE}" in
     x86_64)
         ARCH="amd64"
         SUBARCH="amd64"
@@ -48,7 +48,7 @@ esac
 # VARIABLES
 #
 # You can change any variable if you will define it before script execution (e.g. VAR1=A VAR2=B ./install.sh)
-# Or import configuration file by ./install.sh --config=/path/to/file || --config=https://server/config.file
+# Or import configuration file by ./install.sh --config=/path/to/file || --config=https://server/file
 #
 # It is a must for autobuild to change ROOT_PASSWORD, ROOT_PASSWORD2 and verify that default "System setup" fit your system
 #
@@ -148,6 +148,8 @@ NETDOMAIN=${NETDOMAIN:-"securix.local"}
 NETNTP=${NETNTP:-"0.gentoo.pool.ntp.org"}
 NETNTP2=${NETNTP2:-"1.gentoo.pool.ntp.org"}
 
+# set to yes, if you want to load config file also during chroot execution
+CHROOTCONFIG=${CHROOTCONFIG:-"no"}
 
 ##############################################################################
 #
@@ -157,16 +159,16 @@ NETNTP2=${NETNTP2:-"1.gentoo.pool.ntp.org"}
 
 f_yesno() {
     #example: f_yesno "Are you sure?" variable
-    if [ "$AUTOBUILD" != "yes" ]; then
+    if [ "${AUTOBUILD}" != "yes" ]; then
         local answer
         echo -ne "${txtblue}» Q: ${1} (yes/NO): ${txtdefault}"
         read answer
-        case "$answer" in
+        case "${answer}" in
             y|Y|yes|YES|Yes) yesno="yes" ;;
             *) yesno="no" ;;
         esac
-        if [ ! -z "$2" ]; then
-            eval $2="$yesno"
+        if [ ! -z "${2}" ]; then
+            eval "${2}"="${yesno}"
         fi
     else
         echo -e "AUTOBUILD: ${txtblue}» Q: ${1} ${2} ${txtdefault}"
@@ -175,16 +177,16 @@ f_yesno() {
 
 f_getvar() {
     #example: f_getvar "Your name?" variable "default value"
-    if [ "$AUTOBUILD" != "yes" ]; then
+    if [ "${AUTOBUILD}" != "yes" ]; then
         local answer
         echo -ne "${txtblue}» Q: ${1} ${txtdefault}"
         read answer
         #set default when null
-        if [ -z "$answer" ]; then
+        if [ -z "${answer}" ]; then
             local defaultvar=${3:?Error answer and default value is null}
-            eval $2="$3"
+            eval "${2}"="${3}"
         else
-            eval $2="$answer"
+            eval "${2}"="${answer}"
         fi
     else
         echo -e "AUTOBUILD: ${txtblue}» Q: ${1} ${2} ${3} ${txtdefault}"
@@ -193,17 +195,17 @@ f_getvar() {
 
 f_getpass() {
     #example: f_getpass "Service password:" variable "default value"
-    if [ "$AUTOBUILD" != "yes" ]; then
+    if [ "${AUTOBUILD}" != "yes" ]; then
         local answer
         echo -ne "${txtblue}» ${1} ${txtdefault}"
         read -s -p "" answer
         f_msg newline
         #set default when null
-        if [ -z "$answer" ]; then
+        if [ -z "${answer}" ]; then
             local defaultvar=${3:?Error answer and default value is null}
-            eval $2="$3"
+            eval "${2}"="${3}"
         else
-            eval $2="$answer"
+            eval "${2}"="${answer}"
         fi
     else
         echo -e "AUTOBUILD: ${txtblue}» ${1} ${txtdefault}"
@@ -212,7 +214,7 @@ f_getpass() {
 
 f_msg() {
     #example: f_msg info "This is info message"
-    case "$1" in
+    case "${1}" in
         error) echo -e "${txtred}${2} ${txtdefault}" ;;
         warn) echo -e "${txtyellow}${2} ${txtdefault}" ;;
         info) echo -e "${txtgreen}${2} ${txtdefault}" ;;
@@ -224,19 +226,19 @@ f_msg() {
 f_download() {
     #usage: f_download $link $backup-link
     #example: f_download https://x.y.z/file.tgz https://mirror.x.y.z/file.tgz
-    if [ -z $1 ]; then
+    if [ -z "${1}" ]; then
         echo "--- Error: No URL provided"
     fi
     # propagate error code in pipelines
     set -o pipefail
-    local downlink="$1"
-    local backuplink="$2"
-    local downfile=${downlink##*/}
-    local backupfile=${backuplink##*/}
+    local downlink="${1}"
+    local backuplink="${2}"
+    local downfile="${downlink##*/}"
+    local backupfile="${backuplink##*/}"
     local wgeterror="no"
     # remove parameters from link
-    downfile=${downfile%%\?*}
-    backupfile=${backupfile%%\?*}
+    downfile="${downfile%%\?*}"
+    backupfile="${backupfile%%\?*}"
     # remove previous files if any
     rm -f ${downfile} ${backupfile}
     echo "Downloading: ${downlink}"
@@ -244,26 +246,26 @@ f_download() {
     # wget version in gentoo minimal CD do not support PFS and https-only :(
     wget --timeout=30 --no-cache --progress=dot -O "${downfile}" "${downlink}" 2>&1 | grep --line-buffered "%" | \
         sed -u -e "s,\.,,g" | awk '{printf("\b\b\b\b%4s", $2)}'
-    if [ $? -ne 0 ]; then
+    if [ "${?}" -ne "0" ]; then
         wgeterror="yes"
     fi
     echo " DONE"
-    if [ -f $downfile -a "$wgeterror" = "no" ]; then
+    if [ -f "${downfile}" -a "${wgeterror}" = "no" ]; then
         downloaded="yes"
         return 0
     else
         wgeterror="no"
-        if [ ! -z $backuplink ]; then
+        if [ ! -z "${backuplink}" ]; then
             echo "Downloading from mirror: ${backuplink}"
             echo -n "Status:     "
             # https-only not used as Gentoo mirrors usually dont have SSL
             wget --timeout=30 --no-cache --progress=dot -O "${backupfile}" "${backuplink}" 2>&1 | grep --line-buffered "%" | \
                 sed -u -e "s,\.,,g" | awk '{printf("\b\b\b\b%4s", $2)}'
-            if [ $? -ne 0 ]; then
+            if [ "${?}" -ne "0" ]; then
                 wgeterror="yes"
             fi
             echo " DONE"
-            if [ -f $backupfile -a "$wgeterror" = "no" ]; then
+            if [ -f "${backupfile}" -a "${wgeterror}" = "no" ]; then
                 downloaded="yes"
                 return 0
             else
@@ -280,11 +282,11 @@ f_download() {
 f_dmesg() {
     #example: f_dmesg ttyS USERSERIAL
     #if string exist 2nd parameter have value "yes"
-    dmesg | grep ${1} > /dev/null
-    if [ $? -eq 0 ]; then
-        export $2="yes"
+    dmesg | grep "${1}" > /dev/null
+    if [ "${?}" -eq "0" ]; then
+        export "${2}"="yes"
     else
-        export $2="no"
+        export "${2}"="no"
     fi
 }
 
@@ -327,11 +329,11 @@ trap exit_on_error 1 2 3 15 ERR
 exit_on_error() {
     local exit_status=${1:-$?}
     echo -e "${txtred}»»» Exiting $0 with status: $exit_status ${txtdefault}"
-    if [ "$DISKSYNC" != "ok" ]; then
+    if [ "${DISKSYNC}" != "ok" ]; then
       echo -e "${txtred}»»» If you have problem with partitioning, please reboot server${txtdefault}"
     fi
-    rm -f $LOCKFILE
-    exit $exit_status
+    rm -f "${LOCKFILE}"
+    exit "${exit_status}"
 }
 
 ##############################################################################
@@ -363,23 +365,23 @@ f_banner() {
 
 f_basic_check() {
     # check permissions
-    if [ $EUID -ne 0 ]; then
+    if [ "${EUID}" -ne "0" ]; then
         f_msg error "This script must be run as root."
         exit_on_error
     fi
 
     # lockfile
-    if [ -f $LOCKFILE ]; then
+    if [ -f "${LOCKFILE}" ]; then
         f_msg error "It seems that there is already running Securix installer... exiting"
         f_msg info "If youre sure what youre doing, you can execute: rm -f ${LOCKFILE}"
         exit_on_error
     else
-        touch $LOCKFILE
+        touch "${LOCKFILE}"
     fi
 
     # check networking
-    wget --timeout=30 --delete-after -q http://www.google.com || google_check=$?
-    if [ ! -z "$google_check" ]; then
+    wget --timeout=30 --delete-after -q http://www.google.com || google_check="${?}"
+    if [ ! -z "${google_check}" ]; then
         f_msg error "ERROR: Unable to contact google.com!"
         f_msg info  "Yes, Google can be down, but Occam's Razor would suggest that you have problem with your Internet connectivity."
         f_msg info " --- Please setup http_proxy or fix network issue"
@@ -389,12 +391,12 @@ f_basic_check() {
 
 f_installer_signature() {
     # verifying securix installer
-    if [ "$SKIPSIGN" != "yes" ]; then
+    if [ "${SKIPSIGN}" != "yes" ]; then
         f_msg warn "Verifying signature of installation script..."
-        f_download ${SECURIXFILES}/install/install.sh.sign ${SECURIXFILESDR}/install/install.sh.sign
-        f_download ${SECURIXFILES}/certificates/securix-codesign.pub ${SECURIXFILESDR}/certificates/securix-codesign.pub
-        openssl dgst -sha512 -verify securix-codesign.pub -signature install.sh.sign ${BASH_SOURCE}
-        if [ $? -ne 0 ]; then
+        f_download "${SECURIXFILES}/install/install.sh.sign" "${SECURIXFILESDR}/install/install.sh.sign"
+        f_download "${SECURIXFILES}/certificates/securix-codesign.pub" "${SECURIXFILESDR}/certificates/securix-codesign.pub"
+        openssl dgst -sha512 -verify securix-codesign.pub -signature install.sh.sign "${BASH_SOURCE}"
+        if [ "${?}" -ne "0" ]; then
             f_msg error "Verification failed!"
             f_msg warn "If YOU modified install script, you can skip this check by ./install.sh --skipsign"
             exit_on_error
@@ -419,12 +421,12 @@ f_ask_hostname() {
 f_ask_root_pass() {
     # setup root password
     unset passmatch
-    until [ "$passmatch" = "ok" ]; do
+    until [ "${passmatch}" = "ok" ]; do
     f_getpass "Please enter ROOT password/phrase: " ROOT_PASSWORD "${ROOT_PASSWORD}"
     f_getpass "Please enter ROOT password/phrase one more time: " ROOT_PASSWORD2 "${ROOT_PASSWORD2}"
 
-    if [ "$ROOT_PASSWORD" = "$ROOT_PASSWORD2" ]; then
-        if [ "$ROOT_PASSWORD" != "s3cur1x" ]; then
+    if [ "${ROOT_PASSWORD}" = "${ROOT_PASSWORD2}" ]; then
+        if [ "${ROOT_PASSWORD}" != "s3cur1x" ]; then
             passmatch="ok"
         else
             f_msg warn "Do not use default root password! Create your own and save it in KeePass (for example)"
@@ -447,7 +449,7 @@ f_ask_root_mail() {
 f_check_serial() {
     # check serial
     f_dmesg ttyS USERSERIAL
-    if [ "$USERSERIAL" = "yes" ]; then
+    if [ "${USERSERIAL}" = "yes" ]; then
         f_msg info "-- Serial console found. I will provide you serial terminal access"
         SYSTEMPACKAGE="${SYSTEMPACKAGE} minicom setserial"
     fi
@@ -457,7 +459,7 @@ f_check_dmraid() {
     # check dmraid
     # if RAID is not recognized in /dev/mapper is "control" only
     DMRAIDCOUNT=$(ls /dev/mapper | wc -l)
-    if [ "$DMRAIDCOUNT" -gt 1 ]; then
+    if [ "${DMRAIDCOUNT}" -gt "1" ]; then
         f_msg info "-- RAID device found. I will install basic tools and include support in initramfs"
         SYSTEMPACKAGE="${SYSTEMPACKAGE} dmraid"
         GENKERNEL="${GENKERNEL} --dmraid"
@@ -468,12 +470,12 @@ f_check_dmraid() {
 f_check_virtual() {
     # check virtual environment
     f_dmesg "-i virtual" VIRTUAL
-    if [ "$VIRTUAL" = "yes" ]; then
+    if [ "${VIRTUAL}" = "yes" ]; then
         f_msg info "-- It seems that installer is running under virtual machine (VirtualBox, VMware, ...)"
         f_yesno "Securix have pre-defined kernel setup for VM's. Do you want to use it?" VIRTUAL
-        if [ "$VIRTUAL" = "yes" ]; then
+        if [ "${VIRTUAL}" = "yes" ]; then
             f_getvar "Which VM host are you using? 1) VirtualBox 2) KVM/QEMU 3) Xen 4) VMware 5) None of them : " VIRTUALHOST
-            case "$VIRTUALHOST" in
+            case "${VIRTUALHOST}" in
                 1) VIRTUALHOST="VIRTUALBOX" ;;
                 2) VIRTUALHOST="KVM" ;;
                 3) VIRTUALHOST="XEN" ;;
@@ -485,7 +487,7 @@ f_check_virtual() {
                     unset VIRTUALHOST
                     ;;
             esac
-            if [ ! -z $VIRTUALHOST ]; then
+            if [ ! -z "${VIRTUALHOST}" ]; then
                 echo "--- Selected: ${VIRTUALHOST}"
             fi
         fi
@@ -497,18 +499,18 @@ f_check_virtual() {
 
 f_ask_network() {
     # setup networking
-    if [ $INTERFACES -ne 1 ]; then
+    if [ "${INTERFACES}" -ne "1" ]; then
         f_yesno "Multiple ethernets found. Do you want setup bonding?" BONDING
     fi
 
-    if [ -z "$BONDING" -o "$BONDING" = "no" ]; then
+    if [ -z "${BONDING}" -o "${BONDING}" = "no" ]; then
         BONDING="no"
         f_yesno "Do you want setup networking manually? [NO is DHCP]" NETMANUAL
 
-        if [ "$NETMANUAL" = "no" ]; then
+        if [ "${NETMANUAL}" = "no" ]; then
 
             # dhcp
-            if [ $INTERFACES -eq 1 ]; then
+            if [ "${INTERFACES}" -eq "1" ]; then
                 f_msg info "-- Interfaces found in system: ${INTERFACES_FOUND}"
                 f_getvar "Specify interface [default: ${INTERFACES_FOUND}]: " NETETH "${INTERFACES_FOUND}"
                 USEDHCP="yes"
@@ -538,10 +540,10 @@ f_ask_network() {
     fi
 
     # bonding
-    if [ "$BONDING" = "yes" ]; then
+    if [ "${BONDING}" = "yes" ]; then
         SYSTEMPACKAGE="${SYSTEMPACKAGE} net-misc/ifenslave"
         f_yesno "Do you want use defaults (DHCP on bond0, slaves eth0+eth1, mode active-backup)?" USEDHCP
-        if [ "$USEDHCP" = "no" ]; then
+        if [ "${USEDHCP}" = "no" ]; then
             f_msg info "Current ifconfig:"
             ifconfig | grep -B 1 inet | grep -vE '127.0.0.1|Loopback'
             f_msg info "Routing:"
@@ -585,54 +587,54 @@ f_format_boot_swap() {
 
     f_msg info "### Is it this one?"
     echo "---"
-    fdisk -l $DEVICE | grep -E "Disk|${DEVICE}"
+    fdisk -l "${DEVICE}" | grep -E "Disk|${DEVICE}"
     echo "---"
 
     f_yesno "WARNING: ALL DATA WILL BE LOST! Are you OK with that?" DELETEDISK
-    if [ "$DELETEDISK" = "no" ]; then
+    if [ "${DELETEDISK}" = "no" ]; then
         echo "Exiting before disk format..."
         exit_on_error
     fi
 
     f_msg info "###-### Step: Sizing swap ---"
     MEMSIZE=$(grep MemTotal /proc/meminfo | awk '{print $2}')
-    if [ $MEMSIZE -ne $MEMSIZE 2>/dev/null ]; then
+    if [ "${MEMSIZE}" -ne "${MEMSIZE}" 2>/dev/null ]; then
         echo "MEMSIZE is not integer, value: ${MEMSIZE}"
         exit_on_error
     fi
 
-    SWAPCOUNT=$((MEMSIZE * 2))
-    if [ $SWAPCOUNT -lt 4200000 ]; then
+    SWAPCOUNT="$((MEMSIZE * 2))"
+    if [ "${SWAPCOUNT}" -lt "4200000" ]; then
         PSWAPS="+2G"
-        SWAPSIZE=2048000000
-    elif [ $SWAPCOUNT -ge 4200000 ] && [ $SWAPCOUNT -le 8200000 ]; then
+        SWAPSIZE="2048000000"
+    elif [ "${SWAPCOUNT}" -ge "4200000" ] && [ "${SWAPCOUNT}" -le "8200000" ]; then
             PSWAPS="+4G"
-            SWAPSIZE=4096000000
-        elif [ $SWAPCOUNT -gt 8200000 ]; then
+            SWAPSIZE="4096000000"
+        elif [ "${SWAPCOUNT}" -gt "8200000" ]; then
                 PSWAPS="+8G"
-                SWAPSIZE=8192000000
+                SWAPSIZE="8192000000"
     fi
 }
 
 f_size_logical_volumes() {
     f_msg info "###-### Step: Sizing logical volumes ---"
-    DISKSIZE=$(fdisk -l $DEVICE | grep "Disk ${DEVICE}" | awk '{print $5}')
-    if [ $DISKSIZE -ne $DISKSIZE 2>/dev/null ]; then
+    DISKSIZE="$(fdisk -l "${DEVICE}" | grep "Disk ${DEVICE}" | awk '{print $5}')"
+    if [ "${DISKSIZE}" -ne "${DISKSIZE}" 2>/dev/null ]; then
         echo "DISKSIZE is not integer, value: ${DISKSIZE}"
         exit_on_error
     fi
 
-    DISKSIZE=$((DISKSIZE - SWAPSIZE))
+    DISKSIZE="$((DISKSIZE - SWAPSIZE))"
 
-    if [ $DISKSIZE -lt $DISKMIN ]; then
+    if [ "${DISKSIZE}" -lt "${DISKMIN}" ]; then
         VOLUMES="NOVOLUMES"
         ROOTTYPE="83"
         USELVM="no"
-    elif [ $DISKSIZE -ge $DISKMIN ] && [ $DISKSIZE -le $DISKOPTIM ]; then
+    elif [ "${DISKSIZE}" -ge "${DISKMIN}" ] && [ "${DISKSIZE}" -le "${DISKOPTIM}" ]; then
             VOLUMES="MINVOLUMES"
             ROOTTYPE="8e"
             USELVM="yes"
-        elif [ $DISKSIZE -gt $DISKOPTIM ]; then
+        elif [ "${DISKSIZE}" -gt "${DISKOPTIM}" ]; then
                 VOLUMES="OPTIMVOLUMES"
                 ROOTTYPE="8e"
                 USELVM="yes"
@@ -647,7 +649,7 @@ o
 w
 !EOF
 
-    bash -c "fdisk $DEVICE < fdisk.in" >> $LOGFILE 2>&1
+    bash -c "fdisk ${DEVICE} < fdisk.in" >> "${LOGFILE}" 2>&1
 
     # setup config for fdisk
     cat > fdisk.in << !EOF
@@ -677,25 +679,25 @@ q
 !EOF
 
     f_msg info "###-### Step: Creating partitions ---"
-    bash -c "fdisk $DEVICE < fdisk.in" >> $LOGFILE 2>&1
+    bash -c "fdisk ${DEVICE} < fdisk.in" >> "${LOGFILE}" 2>&1
     # wait for successful disk sync
     sleep 3
     DISKSYNC="ok"
 
     f_msg info "###-### Step: Creating boot and swap filesystems ---"
-    mkfs.ext2 -q ${DEVICE}1
-    mkswap ${DEVICE}2 > /dev/null
-    swapon ${DEVICE}2
+    mkfs.ext2 -q "${DEVICE}1"
+    mkswap "${DEVICE}2" > /dev/null
+    swapon "${DEVICE}2"
 }
 
 f_setup_disk_encryption() {
-    if [ "$USELUKS" = "yes" ]; then
+    if [ "${USELUKS}" = "yes" ]; then
         f_msg warn "--- Encrypting disk, please save your passphrase on secure place!"
         f_msg warn "--- Use KeePass or something else, because when you forget passphrase NOBODY will be able to recover data!"
         f_msg warn "--- Type YES if youre OK with that"
-        cryptsetup -c aes-xts-plain -y -s 512 -h whirlpool luksFormat ${DEVICE}3
+        cryptsetup -c aes-xts-plain -y -s 512 -h whirlpool luksFormat "${DEVICE}3"
         f_msg warn "--- Type selected passphrase again to open encrypted partition"
-        cryptsetup luksOpen ${DEVICE}3 root
+        cryptsetup luksOpen "${DEVICE}3" root
         ROOTPV="/dev/mapper/root"
         MAPPER="/dev/mapper/vg-"
         GENKERNEL="${GENKERNEL} --luks"
@@ -708,20 +710,20 @@ f_setup_disk_encryption() {
 }
 
 f_setup_volumes() {
-    case $VOLUMES in
+    case "${VOLUMES}" in
         NOVOLUMES)
             f_msg info "###-### Step: Creating root filesystem ---"
-            mkfs.ext4 -q ${ROOTPV}
+            mkfs.ext4 -q "${ROOTPV}"
             ROOTVG="${ROOTPV}"
             f_msg info "###-### Step: Mounting partitions ---"
-            mount ${ROOTVG} /mnt/gentoo
+            mount "${ROOTVG}" /mnt/gentoo
             mkdir /mnt/gentoo/boot
-            mount ${DEVICE}1 /mnt/gentoo/boot
+            mount "${DEVICE}1" /mnt/gentoo/boot
             ;;
         MINVOLUMES)
             f_msg info "###-### Step: Creating logical volumes ---"
-            pvcreate -ff -y ${ROOTPV}
-            vgcreate vg ${ROOTPV}
+            pvcreate -ff -y "${ROOTPV}"
+            vgcreate vg "${ROOTPV}"
             lvcreate --size 1G --name root vg
             lvcreate --size 5G --name usr vg
             lvcreate --size 2G --name home vg
@@ -733,8 +735,8 @@ f_setup_volumes() {
             ;;
         OPTIMVOLUMES)
             f_msg info "###-### Step: Creating logical volumes ---"
-            pvcreate -ff -y ${ROOTPV}
-            vgcreate vg ${ROOTPV}
+            pvcreate -ff -y "${ROOTPV}"
+            vgcreate vg "${ROOTPV}"
             lvcreate --size 3G --name root vg
             lvcreate --size 10G --name usr vg
             lvcreate --size 5G --name home vg
@@ -752,21 +754,21 @@ f_setup_volumes() {
 }
 
 f_setup_lvm() {
-    if [ "$USELVM" = "yes" ]; then
+    if [ "${USELVM}" = "yes" ]; then
         GENKERNEL="${GENKERNEL} --lvm"
         SYSTEMPACKAGE="${SYSTEMPACKAGE} lvm2"
         f_msg info "###-### Step: Creating filesystems on logical volumes ---"
         for volumes in root usr home var opt tmp; do
             echo "  Creating ext4 on ${MAPPER}${volumes}"
-            mkfs.ext4 -q ${MAPPER}${volumes}
+            mkfs.ext4 -q "${MAPPER}${volumes}"
         done
         f_msg info "###-### Step: Mounting logical volumes ---"
-        mount ${ROOTVG} /mnt/gentoo
+        mount "${ROOTVG}" /mnt/gentoo
         mkdir /mnt/gentoo/boot
-        mount ${DEVICE}1 /mnt/gentoo/boot
+        mount "${DEVICE}1" /mnt/gentoo/boot
         for mountpoint in usr home opt var tmp; do
-            mkdir /mnt/gentoo/${mountpoint}
-            mount ${MAPPER}${mountpoint} /mnt/gentoo/${mountpoint}
+            mkdir "/mnt/gentoo/${mountpoint}"
+            mount "${MAPPER}${mountpoint}" "/mnt/gentoo/${mountpoint}"
         done
     fi
 }
@@ -775,15 +777,15 @@ f_setup_gentoo_gpg() {
     
     # initiate GPG environment
     f_msg info "###-### Step: Importing Gentoo GPG keys ---"
-    f_download ${SECURIXFILES}/certificates/gentoo-gpg.pub ${SECURIXFILESDR}/certificates/gentoo-gpg.pub
-    f_download ${SECURIXFILES}/certificates/gentoo-gpg-autobuild.pub ${SECURIXFILESDR}/certificates/gentoo-gpg-autobuild.pub
+    f_download "${SECURIXFILES}/certificates/gentoo-gpg.pub" "${SECURIXFILESDR}/certificates/gentoo-gpg.pub"
+    f_download "${SECURIXFILES}/certificates/gentoo-gpg-autobuild.pub" "${SECURIXFILESDR}/certificates/gentoo-gpg-autobuild.pub"
     mkdir /etc/portage/gpg
     chmod 700 /etc/portage/gpg
     gpg -quiet --homedir /etc/portage/gpg --import gentoo-gpg.pub
     gpg -quiet --homedir /etc/portage/gpg --import gentoo-gpg-autobuild.pub
     gpg -quiet --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
     gpg -quiet --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
-    gpg -quiet --homedir /etc/portage/gpg -u DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D --verify ${STAGE3LATESTFILE##*/}.DIGESTS.asc
+    gpg -quiet --homedir /etc/portage/gpg -u DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D --verify "${STAGE3LATESTFILE##*/}.DIGESTS.asc"
 }
 
 f_setup_stage3() {
@@ -792,21 +794,21 @@ f_setup_stage3() {
 
     # download stage3
     f_msg info "###-### Step: Downloading hardened stage ---"
-    f_download ${SX_STAGE3BASEURL}${STAGE3LATESTTXT} ${STAGE3BASEURL}${STAGE3LATESTTXT}
+    f_download "${SX_STAGE3BASEURL}${STAGE3LATESTTXT}" "${STAGE3BASEURL}${STAGE3LATESTTXT}"
 
     # find path to latest stage3
-    STAGE3LATESTFILE=$(grep -v '#' ${STAGE3LATESTTXT})
+    STAGE3LATESTFILE="$(grep -v '#' "${STAGE3LATESTTXT}")"
     # and download it
-    f_download ${SX_STAGE3BASEURL}${STAGE3LATESTFILE} ${STAGE3BASEURL}${STAGE3LATESTFILE}
-    statusd=$?
-    f_download ${SX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS ${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS
-    f_download ${SX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc ${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc
+    f_download "${SX_STAGE3BASEURL}${STAGE3LATESTFILE}" "${STAGE3BASEURL}${STAGE3LATESTFILE}"
+    statusd="${?}"
+    f_download "${SX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS" "${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS"
+    f_download "${SX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc" "${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc"
 
     # check SHA512
-    STAGE3SUM=$(sha512sum ${STAGE3LATESTFILE##*/})
-    grep ${STAGE3SUM} ${STAGE3LATESTFILE##*/}.DIGESTS.asc >/dev/null
-    statusc=$?
-    if [ $statusd -ne 0 -o $statusc -ne 0 ]; then
+    STAGE3SUM="$(sha512sum "${STAGE3LATESTFILE##*/}")"
+    grep "${STAGE3SUM}" "${STAGE3LATESTFILE##*/}.DIGESTS.asc" >/dev/null
+    statusc="${?}"
+    if [ "${statusd}" -ne "0" -o "${statusc}" -ne "0" ]; then
         f_msg error "ERROR: There was problem with download or checksum of stage3 file. Exit codes: "
         f_msg warn "download: ${statusd} checksum: ${statusc}"
         exit_on_error
@@ -815,9 +817,9 @@ f_setup_stage3() {
     fi
 
     f_msg info "###-### Step: Extracting stage ---"
-    tar xjpf ${STAGE3LATESTFILE##*/} --checkpoint=.1000
+    tar xjpf "${STAGE3LATESTFILE##*/}" --checkpoint=.1000
     echo " DONE"
-    rm -f ${STAGE3LATESTFILE##*/} ${STAGE3LATESTTXT} *.DIGESTS *.CONTENTS *.asc
+    rm -f "${STAGE3LATESTFILE##*/}" "${STAGE3LATESTTXT}" *.DIGESTS *.CONTENTS *.asc
 }
 
 f_setup_portage() {
@@ -827,21 +829,21 @@ f_setup_portage() {
     # download portage
     # portage is GPG verified 
     f_msg info "###-### Step: Downloading Portage ---"
-    f_download ${SX_PORTAGEFILE} ${PORTAGEFILE}
-    statusd=$?
-    f_download ${SX_PORTAGEFILE}.md5sum ${PORTAGEFILE}.md5sum
-    f_download ${SX_PORTAGEFILE}.gpgsig ${PORTAGEFILE}.gpgsig
+    f_download "${SX_PORTAGEFILE}" "${PORTAGEFILE}"
+    statusd="${?}"
+    f_download "${SX_PORTAGEFILE}.md5sum" "${PORTAGEFILE}.md5sum"
+    f_download "${SX_PORTAGEFILE}.gpgsig" "${PORTAGEFILE}.gpgsig"
     # verify portage GPG
-    gpg --homedir /etc/portage/gpg -u 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910 --verify ${SX_PORTAGEFILE##*/}.gpgsig ${SX_PORTAGEFILE##*/}
-    if [ $? -ne 0 ]; then
+    gpg --homedir /etc/portage/gpg -u 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910 --verify "${SX_PORTAGEFILE##*/}.gpgsig" "${SX_PORTAGEFILE##*/}"
+    if [ "${?}" -ne "0" ]; then
         f_msg error "Gentoo GPG signature of Portage file do not match !!"
         exit_on_error
     fi
 
     # check MD5
-    md5sum --status -c ${SX_PORTAGEFILE##*/}.md5sum
-    statusc=$?
-    if [ $statusd -ne 0 -o $statusc -ne 0 ]; then
+    md5sum --status -c "${SX_PORTAGEFILE##*/}.md5sum"
+    statusc="${?}"
+    if [ "${statusd}" -ne "0" -o "${statusc}" -ne "0" ]; then
         f_msg error "ERROR: There was problem with download or checksum of Portage. Exit codes: "
         f_msg warn "download: ${statusd} checksum: ${statusc}"
         exit_on_error
@@ -850,50 +852,50 @@ f_setup_portage() {
     fi
 
     f_msg info "###-### Step: Extracting Portage ---"
-    tar xmjf ${SX_PORTAGEFILE##*/} -C /mnt/gentoo/usr --checkpoint=.1000
+    tar xmjf "${SX_PORTAGEFILE##*/}" -C /mnt/gentoo/usr --checkpoint=.1000
     echo " DONE"
-    rm -f ${SX_PORTAGEFILE##*/} *.md5sum *.gpgsig
+    rm -f "${SX_PORTAGEFILE##*/}" *.md5sum *.gpgsig
 }
 
 f_download_securix_conf() {
     f_msg info "###-### Step: Downloading Securix system configuration ---"
-    f_download ${SECURIXFILES}${SECURIXSYSTEMCONF} ${SECURIXFILESDR}${SECURIXSYSTEMCONF}
+    f_download "${SECURIXFILES}${SECURIXSYSTEMCONF}" "${SECURIXFILESDR}${SECURIXSYSTEMCONF}"
 }
 
 f_download_chroot() {
     f_msg info "###-### Step: Downloading CHROOT script ---"
-    f_download ${SECURIXFILES}${SECURIXCHROOT} ${SECURIXFILESDR}${SECURIXCHROOT}
+    f_download "${SECURIXFILES}${SECURIXCHROOT}" "${SECURIXFILESDR}${SECURIXCHROOT}"
 }
 
 f_download_hardened() {
     f_msg info "###-### Step: Downloading hardened kernel config ---"
-    if [ "$VIRTUAL" != "yes" -a "$AUTOBUILD" != "yes" ]; then
+    if [ "${VIRTUAL}" != "yes" -a "${AUTOBUILD}" != "yes" ]; then
         GENKERNEL="${GENKERNEL} --menuconfig"
     fi
 
-    f_download ${SECURIXFILES}${KERNELCONFIG} ${SECURIXFILESDR}${KERNELCONFIG}
-    mv ${KERNELCONFIG##*/} hardened-kernel.config
+    f_download "${SECURIXFILES}${KERNELCONFIG}" "${SECURIXFILESDR}${KERNELCONFIG}"
+    mv "${KERNELCONFIG##*/}" hardened-kernel.config
 }
 
 f_verify_signature() {
     f_msg info "###-### Step: Downloading SHA512 list ---"
-    f_download ${SECURIXFILES}/install/sha512.hash ${SECURIXFILESDR}/install/sha512.hash
-    f_download ${SECURIXFILES}/install/sha512.hash.sign ${SECURIXFILESDR}/install/sha512.hash.sign
+    f_download "${SECURIXFILES}/install/sha512.hash" "${SECURIXFILESDR}/install/sha512.hash"
+    f_download "${SECURIXFILES}/install/sha512.hash.sign" "${SECURIXFILESDR}/install/sha512.hash.sign"
 
     f_msg info "###-### Step: Computing checksum ---"
-    grep -E 'chroot.sh|conf.tar.gz' sha512.hash > checksum
+    grep -E "chroot.sh|conf.tar.gz" sha512.hash > checksum
     shasum -a 512 -c checksum >/dev/null
-    if [ $? -eq 0 ]; then
+    if [ "${?}" -eq "0" ]; then
         f_msg info "--- SHA512 checksum: OK"
         rm -f checksum
     else
         f_msg error "--- Problem when computing checksum of Securix files!!"
-        grep -E 'chroot.sh|conf.tar.gz' sha512.list && shasum -a 512 chroot.sh conf.tar.gz
+        grep -E "chroot.sh|conf.tar.gz" sha512.list && shasum -a 512 chroot.sh conf.tar.gz
         exit_on_error
     fi
 
     f_msg info "###-### Step: Verifying Securix files signature ---"
-    f_download ${SECURIXFILES}/certificates/securix-codesign.pub ${SECURIXFILESDR}/certificates/securix-codesign.pub
+    f_download "${SECURIXFILES}/certificates/securix-codesign.pub" "${SECURIXFILESDR}/certificates/securix-codesign.pub"
     openssl dgst -sha512 -verify securix-codesign.pub -signature sha512.hash.sign sha512.hash
 }
 
@@ -932,7 +934,7 @@ PORTAGE_NICENESS=10
 
 f_setup_proxies() {
     # set http_proxy if used
-    if [ ! -z "$http_proxy" ]; then
+    if [ ! -z "${http_proxy}" ]; then
         echo "# user proxy setup is done by /etc/profile.d/sx-proxy.sh" >> /mnt/gentoo/etc/make.conf
         echo "http_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/make.conf
         echo "https_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/make.conf
@@ -943,7 +945,7 @@ f_setup_proxies() {
 
 f_setup_dns() {
     # DNS
-    if [ "$USEDHCP" = "no" ]; then
+    if [ "${USEDHCP}" = "no" ]; then
         echo "domain ${NETDOMAIN}" > /etc/resolv.conf
         echo "nameserver ${NETDNS}" >> /etc/resolv.conf
         echo "nameserver ${NETDNS2}" >> /etc/resolv.conf
@@ -975,7 +977,7 @@ SECURIXVERSION=""
 
 f_setup_fstab() {
     # /etc/fstab
-    if [ "$USELVM" = "no" ]; then
+    if [ "${USELVM}" = "no" ]; then
         cat > /mnt/gentoo/etc/fstab << !EOF
 ${DEVICE}1		/boot		ext2		${BOOTOPTS}	1 2
 ${ROOTPV}		/		ext4		${ROOTOPTS}	0 1
@@ -1006,9 +1008,9 @@ proc                    /proc            proc           defaults        0 0
 
 f_setup_network() {
     # Network - /etc/conf.d/net
-    if [ "$BONDING" = "no" ]; then
+    if [ "${BONDING}" = "no" ]; then
 
-        if [ "$USEDHCP" = "yes" ]; then
+        if [ "${USEDHCP}" = "yes" ]; then
             cat > /mnt/gentoo/etc/conf.d/net << EOF
 config_${NETETH}="dhcp"
 EOF
@@ -1019,9 +1021,9 @@ routes_${NETETH}="default via ${NETGATEWAY}"
 EOF
         fi
     fi
-    if [ "$BONDING" = "yes" ]; then
+    if [ "${BONDING}" = "yes" ]; then
 
-        if [ "$USEDHCP" = "yes" ]; then
+        if [ "${USEDHCP}" = "yes" ]; then
             cat >> /mnt/gentoo/etc/conf.d/net << !EOF
 config_eth0="null"
 config_eth1="null"
@@ -1031,7 +1033,7 @@ miimon_bond0="100"
 config_bond0="dhcp"
 !EOF
         else
-            for slave in $BONDINGSLAVE; do
+            for slave in ${BONDINGSLAVE}; do
                 echo "config_${slave}=\"null\"" >> /mnt/gentoo/etc/conf.d/net
             done
             cat >> /mnt/gentoo/etc/conf.d/net << !EOF
@@ -1047,10 +1049,10 @@ routes_${NETETH}="default gw ${NETGATEWAY}"
 
 f_setup_fail2ban_ip() {
     # define NETIP for fail2ban
-    if [ "$USEDHCP" = "yes" ]; then
+    if [ "${USEDHCP}" = "yes" ]; then
         NETIP=$(ifconfig -a | grep inet | grep -v "127.0.0.1" | awk '{ print $2 }')
         f_validip "${NETIP}"
-        if [ "$VALIDIP" != "yes" ]; then
+        if [ "${VALIDIP}" != "yes" ]; then
             unset NETIP
         fi
     fi
@@ -1093,6 +1095,11 @@ VIRTUAL="${VIRTUAL}"
 VIRTUALHOST="${VIRTUALHOST}"
 AUTOBUILD="${AUTOBUILD}"
 !EOF
+
+    # if really needed, config file can change some variables in chroot
+    if [ ! -z "${CONFIGFILE}" -a -r "${CONFIGFILE}" -a "${CHROOTCONFIG}" = "yes" ]; then
+        cp ${CONFIGFILE} /mnt/gentoo/chroot.config
+    fi
 }
 
 f_execute_chroot() {
@@ -1104,13 +1111,13 @@ f_execute_chroot() {
 
 f_check_chroot() {
     # check chroot status
-    if [ ! -f $CHROOTOK ]; then
+    if [ ! -f "${CHROOTOK}" ]; then
         f_msg error "CHROOT script didnt end successfully..."
         exit_on_error
     else
-        rm -f $CHROOTOK
+        rm -f "${CHROOTOK}"
         rm -f chroot.sh
-        rm -f $LOCKFILE
+        rm -f "${LOCKFILE}"
         rm -f sha512.hash
         rm -f sha512.hash.sign
         rm -f securix-codesign.pub
@@ -1124,9 +1131,9 @@ f_umount_fs() {
     f_msg info "###-### Step: Umounting filesystems ---"
     cd
     
-    if [ "$USELVM" = "yes" ]; then
+    if [ "${USELVM}" = "yes" ]; then
         for partitions in usr home opt var tmp; do
-            umount ${MAPPER}${partitions}
+            umount "${MAPPER}${partitions}"
         done
         umount -l /mnt/gentoo{/boot,/proc,}
         vgchange -a n
@@ -1134,7 +1141,7 @@ f_umount_fs() {
         umount -l /mnt/gentoo{/boot,/proc,}
     fi
 
-    if [ "$USELUKS" = "yes" ]; then
+    if [ "${USELUKS}" = "yes" ]; then
         cryptsetup luksClose root
     fi
 }
@@ -1145,7 +1152,7 @@ f_banner_completed() {
     f_msg info "###-### Securix GNU/Linux installation COMPLETED! ###-###"
     f_msg info "#########################################################"
     f_msg newline
-    if [ "$VOLUMES" = "OPTIMVOLUMES" ]; then
+    if [ "${VOLUMES}" = "OPTIMVOLUMES" ]; then
         f_msg warn "Installer did not use entire disk space. Please resize required partition by \"securix config lvm\""
         f_msg newline
     fi
@@ -1205,11 +1212,11 @@ f_install_securix() {
 ##############################################################################
 
 # unset command line variables
-unset AUTOBUILD CONFIGFILE SKIPSIGN
+unset AUTOBUILD CONFIGFILE SKIPSIGN SXDISK
 
 # parse command line arguments (if any)
-for argument in "$@"; do
-    case "$argument" in
+for argument in "${@}"; do
+    case "${argument}" in
         -a|--auto|--autobuild)
             # autobuild mode without questions, please verify default variables
             # use it together with -c or -s as at least root password must be changed
@@ -1217,41 +1224,59 @@ for argument in "$@"; do
             ;;
         "--c="*|"--conf="*|"--config="*)
             # load variables/setup from different file
-            CONFIGFILE=${argument#*=}
+            CONFIGFILE="${argument#*=}"
             f_msg info "Sourcing configuration file: ${CONFIGFILE}"
-            if [ -f "$CONFIGFILE" ]; then
-                source ${CONFIGFILE}    
+            if [ -r "${CONFIGFILE}" ]; then
+                source "${CONFIGFILE}"
             else
-                f_download ${CONFIGFILE}
-                source ${CONFIGFILE##*/}
+                f_download "${CONFIGFILE}"
+                source "${CONFIGFILE##*/}"
             fi
             ;;
         -s|--skip|--skipsign)
             # if you must modify install script, use this option
+            # it will skip script signature verification
             SKIPSIGN="yes"
             ;;
-        -mountlvm)
+        --mountlvm)
             # for debug purposes or when you forget root password
             # mount Securix LVM partitions
             f_getvar "Please specify disk with Securix installation (example: /dev/sda): " SXDISK
+            f_msg info "--- Scanning for volume groups"
             vgscan
             vgchange -a y
             f_msg info "--- Mounting /"
             mount /dev/vg/root /mnt/gentoo
             for mountpoint in usr home opt var tmp; do
                 f_msg info "--- Mounting /${mountpoint}"
-                mount /dev/vg/${mountpoint} /mnt/gentoo/${mountpoint}
+                mount "/dev/vg/${mountpoint}" "/mnt/gentoo/${mountpoint}"
             done
-            mount ${SXDISK}1 /mnt/gentoo/boot
+            mount "${SXDISK}1" /mnt/gentoo/boot
             f_msg info "--- Changing context"
             cd /mnt/gentoo
             f_msg info "###-#### Youre now in Securix root folder (${PWD})"
             exit
             ;;
-        -mountluks)
+        --mountluks)
             # for debug purposes or when you forget root password
-            # mount Securix LVM partitions
-            
+            # mount Securix LUKS and LVM partitions
+            f_getvar "Please specify disk with Securix installation (example: /dev/sda): " SXDISK
+            f_msg info "--- Now opening LUKS"
+            cryptsetup luksOpen "${SXDISK}3" root
+            f_msg info "--- Scanning for volume groups"
+            vgscan
+            vgchange -a y
+            f_msg info "--- Mounting /"
+            mount /dev/mapper/root /mnt/gentoo
+            for mountpoint in usr home opt var tmp; do
+                f_msg info "--- Mounting /${mountpoint}"
+                mount "/dev/mapper/vg-${mountpoint}" "/mnt/gentoo/${mountpoint}"
+            done
+            mount "${SXDISK}1" /mnt/gentoo/boot
+            f_msg info "--- Changing context"
+            cd /mnt/gentoo
+            f_msg info "###-#### Youre now in Securix root folder (${PWD})"
+            exit
             ;;
     esac
 done
