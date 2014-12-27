@@ -48,25 +48,40 @@ Variables defined in /etc/securix/securix.conf starts with SX_* (SX_VARIABLE)
 Text variable must be enclosed in double-quotation mark, even if it is one word
 VARIABLE="string"
 
-Integer value dont need to be enclosed
-VARIABLE=123
+Same for integer value
+VARIABLE="123"
 
 Variable (string/integer) used inside quotation mark must be enclosed in curly braces
 echo "My name is ${USERNAME}"
 
 When you're executing command inside script do not use backquote (``), but brackets
-VAR=$(echo ${OUTPUT} | awk '{ print $2 }')
+VAR="$(echo "${OUTPUT}" | awk '{ print $2 }')"
 or
-echo $(date) >> $SECURIXLOG
+echo "$(date)" >> "${SECURIXLOG}"
+
+**Every reference** to variable should be enclosed by double-quotation mark and curly braces
+Just in few cases where it may have reason due to internal field separator (for loops), variable don't needs to be enclosed by double-quotation marks
+
+if [ "${VARIABLE}" -eq "0" ]; then
+    echo "OK"
+fi
+
+**Just in this form the variable definition is unambiguous**
+
+Main reasons:
+- variable could contain internal field separator and test will fail (e.g. VARIABLE="aaa bbb").
+- in case of variable or parameter expansion, case modification or work with fields you need to use curly braces anyway, so it's better to have convention everywhere the same
+e.g. "${VARIABLE}/foobar", "${VARAIBLE##*/}", "${VARIABLE^^}", "${VARIABLE[0]}"
 
 ### Arithmetic operations
-SIZE=$((PARTITION + 1000))
+# One of the few exemptions, where for the readibility you don't need to use curly braces
+SIZE="$((PARTITION + 1000))"
 or
-echo $((a = 2 , b = 2 + a , a * b))
+echo "$((a = 2 , b = 2 + a , a * b))"
 or
 ((count++))
 or
-fill=$((((columns - colnumber) * chars) - 1))
+fill="$((((columns - colnumber) * chars) - 1))"
 
 ### IF
 Here you have basic examples of test
@@ -77,36 +92,36 @@ BASH if statements: http://www.linuxtutorialblog.com/post/tutorial-conditions-in
 
 # Compare integer values using one of "-eq, -ne, -lt, -le, -gt, -ge" meaning equal, not equal, less than, less than or equal, greater than, and greater than or equal.
 
-if [ $EUID -ne 0 ]; then
+if [ "${EUID}" -ne "0" ]; then
     f_msg error "This script must be run as root or via sudo"
-    exit 1
+    exit_on_error
 else
     f_msg info "You have root permissions"
 fi
 
 # Check if variable is null
-if [ -z "$VARIABLE" ]; then
+if [ -z "${VARIABLE}" ]; then
     f_msg info "Variable VARIABLE is null"
 fi
 
 # String variable must be enclosed by quotation marks
-if [ "$VARIABLE" = "yes" ]; then
+if [ "${VARIABLE}" = "yes" ]; then
     f_msg info "Accepted"
 fi
 
 # Catch exit status
-if [ $? -eq 0 ]; then
+if [ "${?}" -eq "0" ]; then
     echo "Command end without problem"
 fi
 
 # [[ is used only for string pattern match
 
-if [[ "$VARIABLE" = "A*" ]]; then
+if [[ "${VARIABLE}" = "A*" ]]; then
     f_msg info "Variable start with \"A\""
 fi
 
 ### Loops
-for arguments in "$@"; do
+for arguments in "${@}"; do
     echo "${arguments}"
 done
 
@@ -116,9 +131,9 @@ Again please follow newlines, spaces, tabs, etc. convention
 
 f_updatesecurix() {
     f_msg info "###-### Checking update of Securix scripts ---"
-    f_download ${SECURIXUPDATE}/current
-    LASTVERSION=$(<current)
-    if [ $SECURIXVERSION -eq $LASTVERSION ]; then
+    f_download "${SECURIXUPDATE}/current"
+    LASTVERSION="$(<current)"
+    if [ "${SECURIXVERSION}" -eq "${LASTVERSION}" ]; then
         f_msg info "--- No updates available/needed"
     else
         f_msg info "--- New update available!"
@@ -128,7 +143,7 @@ f_updatesecurix() {
 ### Case statement
 We use mainly two forms
 First one is optimized for readability
-case "$HOSTTYPE" in
+case "${HOSTTYPE}" in
     x86_64)
         ARCH="amd64"
         ;;
@@ -142,7 +157,7 @@ case "$HOSTTYPE" in
 esac
 
 And short-form mainly used in shared functions
-case "$answer" in
+case "${answer}" in
     y|Y|yes|YES|Yes) yesno="yes" ;;
     *) yesno="no" ;;
 esac
@@ -165,7 +180,7 @@ LONGLINE=$(wc -L $file)
 LONGLINE=${LONGLINE%% *} # longest match of the pattern " *" from the end of the string
 
 Next example:
-We would like to split path from file name, but without external commands like basename, dirname
+We would like to split path from file name, but without commands like basename, dirname
 FILE="/aaa/bbb/ccc.tgz"
 
 FILEPATH=${FILE%/*} # will produce /aaa/bbb
@@ -178,19 +193,19 @@ The (currently undocumented) operators "~" and "~~" reverse the case of the give
 
 MYVAR="aaBBcc"
 
-echo ${MYVAR^}  # AaBBcc
-echo ${MYVAR^^} # AABBCC
-echo ${MYVAR,,} # aabbcc
-echo ${MYVAR~~} # AAbbCC
+echo "${MYVAR^}"  # AaBBcc
+echo "${MYVAR^^}" # AABBCC
+echo "${MYVAR,,}" # aabbcc
+echo "${MYVAR~~}" # AAbbCC
 
 # Search and replace example (instead of usign SED)
 MYVAR="abc 123 abc 456"
 
 # one slash is to only substitute the first occurrence
-echo ${MYVAR/abc/klm} # will produce: klm 123 abc 456
+echo "${MYVAR/abc/klm}" # will produce: klm 123 abc 456
 
 # two slashes is to substitute all occurrences
-echo ${MYVAR//abc/klm} # will produce: klm 123 klm 456
+echo "${MYVAR//abc/klm}" # will produce: klm 123 klm 456
 
 To understand it well, please read this: http://wiki.bash-hackers.org/syntax/pe
 
