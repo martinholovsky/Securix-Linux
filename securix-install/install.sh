@@ -322,13 +322,14 @@ f_validip() {
     fi
 }
 
-# End script in case of error
-# trap also this exit signals: 1/HUP, 2/INT, 3/QUIT, 15/TERM, ERR
+# end script in case of error
+# exception: if statement, until and while loop, logical AND (&&) or OR (||)
+# trap also those exit signals: 1/HUP, 2/INT, 3/QUIT, 15/TERM, ERR
 trap exit_on_error 1 2 3 15 ERR
 
 exit_on_error() {
-    local exit_status=${1:-$?}
-    echo -e "${txtred}»»» Exiting $0 with status: $exit_status ${txtdefault}"
+    local exit_status="${1:-$?}"
+    echo -e "${txtred}»»» Exiting ${0} with status: ${exit_status} ${txtdefault}"
     if [ "${DISKSYNC}" != "ok" ]; then
       echo -e "${txtred}»»» If you have problem with partitioning, please reboot server${txtdefault}"
     fi
