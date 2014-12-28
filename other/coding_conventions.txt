@@ -51,6 +51,9 @@ VARIABLE="string"
 Same for integer value
 VARIABLE="123"
 
+Same for execution (even variable inside command)
+VARIABLE="$(echo "${MAIULHOST}" | cut -d' ' -f3)"
+
 Variable (string/integer) used inside quotation mark must be enclosed in curly braces
 echo "My name is ${USERNAME}"
 
@@ -60,7 +63,7 @@ or
 echo "$(date)" >> "${SECURIXLOG}"
 
 **Every reference** to variable should be enclosed by double-quotation mark and curly braces
-Just in few cases where it may have reason due to internal field separator (for loops), variable don't needs to be enclosed by double-quotation marks
+Just in few cases where it may have reason due to internal field separator (for loops, arguments, ..), variable don't needs to be enclosed by double-quotation marks
 
 if [ "${VARIABLE}" -eq "0" ]; then
     echo "OK"
@@ -104,7 +107,7 @@ if [ -z "${VARIABLE}" ]; then
     f_msg info "Variable VARIABLE is null"
 fi
 
-# String variable must be enclosed by quotation marks
+# Compare string variable
 if [ "${VARIABLE}" = "yes" ]; then
     f_msg info "Accepted"
 fi
@@ -116,7 +119,7 @@ fi
 
 # [[ is used only for string pattern match
 
-if [[ "${VARIABLE}" = "A*" ]]; then
+if [[ "${VARIABLE}" = "*Available*" ]]; then
     f_msg info "Variable start with \"A\""
 fi
 
@@ -174,6 +177,11 @@ VARIABLE=$(</path/to/file)
 We would like to get lenght of longest line in one file via "wc -L $file", but it will produce output in format "$number $file"
 Usually we will use something like this:
 wc -L $file | awk '{ print $1 }'
+
+Don't use ``ls | grep``
+KERNEL="$(ls /usr/src/ | grep hardened)"
+use glob (or for loop) instead
+KERNEL="/usr/src/*hardened*"
 
 But we can use parameter expansion to split value from filename.
 LONGLINE=$(wc -L $file)
