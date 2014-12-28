@@ -28,7 +28,7 @@
 
 CHROOTOK="/chroot.ok"
 CHROOTVAR="/chroot.var"
-SECURIXVERSION=$(date +%F)
+SECURIXVERSION="$(date +%F)"
 txtred='\e[0;31m'
 txtblue='\e[1;34m'
 txtgreen='\e[0;32m'
@@ -37,7 +37,7 @@ txtdefault='\e[00m'
 txtyellow='\e[0;33m'
 
 # Load installer variables
-. $CHROOTVAR
+. "${CHROOTVAR}"
 
 ##############################################################################
 #
@@ -47,7 +47,7 @@ txtyellow='\e[0;33m'
 
 f_msg() {
     #example: f_msg info "This is info message"
-    case "$1" in
+    case "${1}" in
     error) echo -e "${txtred}${2} ${txtdefault}" ;;
     warn) echo -e "${txtyellow}${2} ${txtdefault}" ;;
     info) echo -e "${txtgreen}${2} ${txtdefault}" ;;
@@ -59,19 +59,22 @@ f_msg() {
 f_grep() {
     #example: f_grep " ept " /proc/cpuinfo EPTFLAG
     #if string exist 3rd parameter have value "yes"
-    grep ${1} ${2} > /dev/null
-    if [ $? -eq 0 ]; then
-        export $3="yes"
+    grep "${1}" "${2}" > /dev/null
+    if [ "${?}" -eq "0" ]; then
+        export "${3}"="yes"
     else
-        export $3="no"
+        export "${3}"="no"
     fi
 }
 
+# end script in case of error
+# exception: if statement, until and while loop, logical AND (&&) or OR (||)
+# trap also those exit signals: 1/HUP, 2/INT, 3/QUIT, 15/TERM, ERR
 trap exit_on_error 1 2 3 15 ERR
 
 exit_on_error() {
-    local exit_status=${1:-$?}
-    echo -e "${txtred}»»» Exiting $0 with status: $exit_status ${txtdefault}"
+    local exit_status="${1:-$?}"
+    echo -e "${txtred}»»» Exiting ${0} with status: ${exit_status} ${txtdefault}"
     echo -e "${txtblue} YOU ARE NOW IN DEBUG MODE. Fix issue and type \"exit\" to continue ${txtdefault}"
     echo -e "${txtblue}If problem occur during emerge, try \"emerge --resume\"${txtdefault}"
     # for debug only
@@ -116,32 +119,32 @@ f_setup_timezone() {
 f_setup_hostname() {
     # set hostname
     f_msg info "###-### Step: Hostname setup ---"
-    hostname ${SECURIX_HOSTNAME}
+    hostname "${SECURIX_HOSTNAME}"
 }
 
 f_setup_network_rc() {
     # setup networking
     f_msg info "###-### Step: Network setup ---"
     cd /etc/init.d
-    ln -s net.lo net.${NETETH}
-    rc-update add net.${NETETH} default
+    ln -s net.lo net."${NETETH}"
+    rc-update add net."${NETETH}" default
 }
 
 f_setup_root_pass() {
     # setup root pasword
     f_msg info "###-### Step: Root password ---"
     passwd << EOF 2>/dev/null
-$ROOT_PASSWORD
-$ROOT_PASSWORD
+${ROOT_PASSWORD}
+${ROOT_PASSWORD}
 EOF
 }
 
 f_setup_hardened_profile() {
     # select hardened profile
     f_msg info "###-### Step: Hardened profile ---"
-    PROFILE=$(eselect profile list | grep -vE "selinux|no-multilib|uclibc|x32|musl" | grep hardened | cut -d"[" -f2 | cut -d"]" -f1)
-    eselect profile set $PROFILE
-    if [ $? -ne 0 ]; then
+    PROFILE="$(eselect profile list | grep -vE "selinux|no-multilib|uclibc|x32|musl" | grep hardened | cut -d"[" -f2 | cut -d"]" -f1)"
+    eselect profile set "${PROFILE}"
+    if [ "${?}" -ne "0" ]; then
         f_msg error "ERROR: There seems to be problem when setup hardened profile"
         exit_on_error
     fi
@@ -150,7 +153,7 @@ f_setup_hardened_profile() {
 
 f_securix_package_use() {
     # accept keywords
-    if [ ! -d /etc/portage/ ]; then
+    if [ ! -d "/etc/portage/" ]; then
         mkdir /etc/portage/
     fi
     cat > /etc/portage/package.accept_keywords << !EOF
@@ -176,19 +179,18 @@ f_emerge_hardened() {
 
 f_compile_kernel() {
     f_msg info "###-### Step: Compiling hardened kernel ---"
-    KERNEL=$(ls /usr/src/ | grep hardened)
     # replacing tux with Securix mascot
     cd / && tar xzf conf.tar.gz --no-anchored logo_linux_clut224.ppm
     chown root:root /usr/share/securix/logo_linux_clut224.ppm
     cp /usr/share/securix/logo_linux_clut224.ppm /usr/src/linux/drivers/video/logo/
 
     # adding grsec option when running under VM
-    if [ ! -z $VIRTUALHOST -a $VIRTUAL = "yes" ]; then
+    if [ ! -z "${VIRTUALHOST}" -a "${VIRTUAL}" = "yes" ]; then
         f_msg info "-- adding grsec options for VM ${VIRTUALHOST}"
         echo "CONFIG_GRKERNSEC_CONFIG_VIRT_${VIRTUALHOST}=y" >> hardened-kernel.config
         echo "CONFIG_GRKERNSEC_CONFIG_VIRT_GUEST=y" >> hardened-kernel.config
         f_grep " ept " /proc/cpuinfo EPTFLAG
-        if [ "$EPTFLAG" = "yes" ]; then
+        if [ "${EPTFLAG}" = "yes" ]; then
             f_msg info "-- adding EPT (Extended Page Table) because your CPU supports it"
             echo "CONFIG_GRKERNSEC_CONFIG_VIRT_EPT=y" >> hardened-kernel.config
         else
@@ -199,7 +201,7 @@ f_compile_kernel() {
     fi
 
     # generate kernel
-    genkernel $GENKERNEL all
+    genkernel ${GENKERNEL} all
     mv hardened-kernel.config /etc/kernels/hardened-kernel.config
 }
 
@@ -216,7 +218,7 @@ sys-boot/grub:0 iptables pam mailx smartmontools ssmtp fail2ban
     rc-update add iptables boot
     rc-update add fail2ban default
 
-    if [ "$USELVM" = "yes" ]; then
+    if [ "${USELVM}" = "yes" ]; then
         rc-update add lvm boot
         rc-update add lvm-monitoring default
     fi
@@ -228,15 +230,15 @@ f_rebuild_toolchain() {
     emerge --quiet --oneshot gcc
 
     # select newer GCC
-    GCCCONFIG=$(gcc-config -l | grep -vE '\*|hardened|vanilla' | cut -d"[" -f2 | cut -d"]" -f1)
-    if [ ! -z "$GCCCONFIG" ]; then
-        gcc-config ${GCCCONFIG}
+    GCCCONFIG="$(gcc-config -l | grep -vE '\*|hardened|vanilla' | cut -d"[" -f2 | cut -d"]" -f1)"
+    if [ ! -z "${GCCCONFIG}" ]; then
+        gcc-config "${GCCCONFIG}"
     fi
 
     # select newer Python
-    PYTHONCONFIG=$(eselect python list | grep 'python3.2' | cut -d"[" -f2 | cut -d"]" -f1)
-    if [ ! -z "$PYTHONCONFIG" ]; then
-        eselect python set ${PYTHONCONFIG}
+    PYTHONCONFIG="$(eselect python list | grep 'python3.2' | cut -d"[" -f2 | cut -d"]" -f1)"
+    if [ ! -z "${PYTHONCONFIG}" ]; then
+        eselect python set "${PYTHONCONFIG}"
         python-updater
     fi
     emerge --quiet --oneshot binutils virtual/libc bash
@@ -256,11 +258,11 @@ pyinotify traceroute wget
 
 f_setup_serial() {
     # setup serial
-    if [ "$USESERIAL" = "yes" ]; then
+    if [ "${USESERIAL}" = "yes" ]; then
         f_msg info "###-### Step: Setting Serial ---"
-        SERIALDEV=$(setserial -g /dev/ttyS[0123] | grep -v unknown | cut -d',' -f1 | head -n 1)
-        SERIALTTY=${SERIALDEV##*/}
-        if [ ! -z $SERIALDEV ]; then
+        SERIALDEV="$(setserial -g /dev/ttyS[0123] | grep -v unknown | cut -d',' -f1 | head -n 1)"
+        SERIALTTY="${SERIALDEV##*/}"
+        if [ ! -z "${SERIALDEV}" ]; then
             f_msg info "-- setting ${SERIALDEV} 9600bps vt100"
             echo "# SERIAL CONSOLE" >> /etc/inittab
             echo "s0:12345:respawn:/sbin/agetty -L -f /etc/issueserial 9600 ${SERIALTTY} vt100" >> /etc/inittab
@@ -275,20 +277,18 @@ f_setup_serial() {
 f_setup_smart() {
     # Check SMART capability
     f_msg info "###-### Step: Checking for S.M.A.R.T. capability ---"
-    DISKTYPE=$(smartctl --scan | grep ${DEVICE} | cut -d' ' -f3)
-    SMARTSTATUS=$(smartctl -i -d ${DISKTYPE} ${DEVICE})
-    if [[ "$SMARTSTATUS" =~ "SMART support is: Available" ]]; then
+    DISKTYPE="$(smartctl --scan | grep "${DEVICE}" | cut -d' ' -f3)"
+    SMARTSTATUS="$(smartctl -i -d "${DISKTYPE}" "${DEVICE}")"
+    if [[ "${SMARTSTATUS}" == "*Available*" ]]; then
         f_msg info "--- Device ${DEVICE} support S.M.A.R.T."
-        smartctl -s on -d ${DISKTYPE} ${DEVICE}
+        smartctl -s on -d "${DISKTYPE}" "${DEVICE}"
         sed -i 's/^DEVICESCAN/#DEVICESCAN/g' /etc/smartd.conf
         # monitor disk and run short self-test every day at 2AM, long test on Sunday at 4AM
         echo "${DEVICE} -d ${DISKTYPE} -a -I 194 -W 4,45,60 -R 5 -s (S/../.././02|L/../../7/04) -m root" >> /etc/smartd.conf
-        SMARTSUPPORT="yes"
         rc-update add smartd default
         f_msg info "--- S.M.A.R.T. enabled and monitoring has been setup"
     else
         f_msg info "--- Device ${DEVICE} doesnt support S.M.A.R.T."
-        SMARTSUPPORT="no"
     fi
 }
 
@@ -296,8 +296,8 @@ f_setup_grub() {
     # setup grub
     f_msg info "###-### Step: Setting Grub ---"
 
-    KERNELIMG=$(ls /boot | grep kernel | grep securix)
-    INITRAMIMG=$(ls /boot | grep initramfs | grep securix)
+    KERNELIMG="/boot/*kernel*securix*"
+    INITRAMIMG="/boot/*initramfs*securix*"
 
     cat > /boot/grub/grub.conf << !EOF
 # info: Securix GNU/Linux grub.conf
@@ -315,28 +315,28 @@ title Securix GNU/Linux ${SECURIXVERSION}
 root (hd0,0)
 !EOF
 
-    if [ "$USELVM" = "yes" -a "$USELUKS" = "yes" ]; then
+    if [ "${USELVM}" = "yes" -a "${USELUKS}" = "yes" ]; then
         cat >> /boot/grub/grub.conf << !EOF
 kernel (hd0,0)/${KERNELIMG} root=/dev/ram0 init=/linuxrc ramdisk=8192 crypt_root=${DEVICE}3 real_root=${MAPPER}root dolvm ${GRUBOPTS}
 initrd (hd0,0)/${INITRAMIMG}
 !EOF
     fi
 
-    if [ "$USELVM" = "yes" -a "$USELUKS" = "no" ]; then
+    if [ "${USELVM}" = "yes" -a "${USELUKS}" = "no" ]; then
         cat >> /boot/grub/grub.conf << !EOF
 kernel (hd0,0)/${KERNELIMG} root=${MAPPER}root dolvm ${GRUBOPTS}
 initrd (hd0,0)/${INITRAMIMG}
 !EOF
     fi
 
-    if [ "$USELVM" = "no" -a "$USELUKS" = "yes" ]; then
+    if [ "${USELVM}" = "no" -a "${USELUKS}" = "yes" ]; then
         cat >> /boot/grub/grub.conf << !EOF
 kernel (hd0,0)/${KERNELIMG} root=/dev/ram0 init=/linuxrc ramdisk=8192 crypt_root=${DEVICE}3 real_root=${ROOTPV} ${GRUBOPTS}
 initrd (hd0,0)/${INITRAMIMG}
 !EOF
     fi
 
-    if [ "$USELVM" = "no" -a "$USELUKS" = "no" ]; then
+    if [ "${USELVM}" = "no" -a "${USELUKS}" = "no" ]; then
         cat >> /boot/grub/grub.conf << !EOF
 kernel (hd0,0)/${KERNELIMG} root=${DEVICE}3 ${GRUBOPTS}
 !EOF
@@ -369,7 +369,7 @@ f_setup_securix_system() {
     chmod -R 0600 /etc/securix
     chmod -R 0665 /var/securix
     
-    # make securix cron symlink
+    # make securix cron symlinks
     for sx in hourly daily weekly monthly; do
         ln -s /usr/sbin/securix-cron /etc/cron.${sx}/sx-cron
     done
@@ -431,14 +431,14 @@ f_setup_gentoo_gpg() {
 
 f_setup_fail2ban() {
     # Fail2Ban
-    if [ ! -z "$NETIP" ]; then
+    if [ ! -z "${NETIP}" ]; then
         sed -i "/ignoreip =/ c ignoreip = 127.0.0.1/8 \"${NETIP}\"" /etc/fail2ban/jail.local
     fi
 }
 
 f_setup_ntp() {
     # NTP servers
-    if [ ! -z $NETNTP ]; then
+    if [ ! -z "${NETNTP}" ]; then
         grep -vE '^server' /etc/ntpd.conf > /etc/ntpd.conf.mv
         mv /etc/ntpd.conf.mv /etc/ntpd.conf
         echo "server ${NETNTP}" >> /etc/ntpd.conf
@@ -451,14 +451,14 @@ f_setup_ntp() {
 
 f_setup_mail() {
     # root mail forward
-    MAILHUB=$(echo $MAIL_HOST | cut -d' ' -f1)
-    MAILUSER=$(echo $MAIL_HOST | cut -d' ' -f2)
-    MAILPASS=$(echo $MAIL_HOST | cut -d' ' -f3)
+    MAILHUB="$(echo "${MAIL_HOST}" | cut -d' ' -f1)"
+    MAILUSER="$(echo "${MAIL_HOST}" | cut -d' ' -f2)"
+    MAILPASS="$(echo "${MAIL_HOST}" | cut -d' ' -f3)"
 
-    if [ "$ROOT_MAIL" != "root" ]; then
+    if [ "${ROOT_MAIL}" != "root" ]; then
         echo "root: ${ROOT_MAIL}" >> /etc/ssmtp/revaliases
     fi
-    if [ "$MAILHUB" != "mail" ]; then
+    if [ "${MAILHUB}" != "mail" ]; then
         sed -i "/^mailhub=/ c mailhub=${MAIL_HOST}" /etc/ssmtp/ssmtp.conf
         echo "AuthUser=${MAILUSER}" >> /etc/ssmtp/ssmtp.conf
         echo "AuthPass=${MAILPASS}" >> /etc/ssmtp/ssmtp.conf
@@ -469,7 +469,7 @@ f_setup_mail() {
 
 f_setup_proxy() {
     # profile proxy setup
-    if [ ! -z "$http_proxy" ]; then
+    if [ ! -z "${http_proxy}" ]; then
         echo "http_proxy=\"${http_proxy}\"" >> /etc/profile.d/sx-proxy.sh
         echo "https_proxy=\"${http_proxy}\"" >> /etc/profile.d/sx-proxy.sh
         echo "ftp_proxy=\"${http_proxy}\"" >> /etc/profile.d/sx-proxy.sh
@@ -482,8 +482,8 @@ f_create_securix_user() {
     f_msg info "###-### Step: Creating securix user ---"
     useradd securix -m -G wheel,admin,sshusers,motd
     passwd securix << EOF 2>/dev/null
-$USER_PASSWORD
-$USER_PASSWORD
+${USER_PASSWORD}
+${USER_PASSWORD}
 EOF
     chage -d 0 securix
 }
@@ -501,8 +501,8 @@ f_create_rkhunter_data() {
 f_all_done() {
     # --- ALL DONE ---
     f_msg info "###-### Step: CHROOT script completed ---"
-    touch $CHROOTOK
-    rm -f $CHROOTVAR
+    touch "${CHROOTOK}"
+    rm -f "${CHROOTVAR}"
     rm -f chroot.config
 }
 
