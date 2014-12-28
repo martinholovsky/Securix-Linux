@@ -87,8 +87,8 @@ txtdefault='\e[00m'
 txtyellow='\e[0;33m'
 # partitioning
 PBOOTS=${PBOOTS:-"+256M"}
-DISKMIN=${DISKMIN:-18000000000}
-DISKOPTIM=${DISKOPTIM:-38000000000}
+DISKMIN=${DISKMIN:-"18000000000"}
+DISKOPTIM=${DISKOPTIM:-"38000000000"}
 BOOTOPTS=${BOOTOPTS:-"noauto,relatime,nodiratime"}
 ROOTOPTS=${ROOTOPTS:-"defaults,relatime,nodiratime"}
 USROPTS=${USROPTS:-"defaults,relatime,nodiratime,nodev"}
@@ -130,8 +130,8 @@ NETMANUAL=${NETMANUAL:-"no"}
 # use DHCP?
 USEDHCP=${USEDHCP:-"yes"}
 # network interface name
-if [ $INTERFACES -eq 1 ]; then
-    NETETH=${INTERFACES_FOUND}
+if [ "${INTERFACES}" -eq "1" ]; then
+    NETETH="${INTERFACES_FOUND}"
 else
     NETETH=${NETETH:-"eth0"}
 fi
