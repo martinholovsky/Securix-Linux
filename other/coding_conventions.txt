@@ -51,10 +51,10 @@ VARIABLE="string"
 Same for integer value
 VARIABLE="123"
 
-Same for execution (even variable inside command)
-VARIABLE="$(echo "${MAIULHOST}" | cut -d' ' -f3)"
+Same for execution (even for variable inside)
+VARIABLE="$(echo "${MAILHOST}" | cut -d' ' -f3)"
 
-Variable (string/integer) used inside quotation mark must be enclosed in curly braces
+Variable (string/integer) used inside quotation mark must be always enclosed in curly braces
 echo "My name is ${USERNAME}"
 
 When you're executing command inside script do not use backquote (``), but brackets

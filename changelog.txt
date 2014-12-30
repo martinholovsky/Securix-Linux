@@ -5,6 +5,13 @@
 #
 #-#
 
+RELEASE: 20141230
+    
+- redesign of install.sh
+- redesign of chroot.sh
+- fixed #59 #69
+- coding convention updated
+
 RELEASE: 20141222
     
 - redesign of install.sh script #68
