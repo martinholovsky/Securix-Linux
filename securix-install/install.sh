@@ -379,8 +379,9 @@ f_basic_check() {
     else
         touch "${LOCKFILE}"
     fi
+}
 
-    # check networking
+f_check_networking() {
     wget --timeout=30 --delete-after -q http://www.google.com || google_check="${?}"
     if [ ! -z "${google_check}" ]; then
         f_msg error "ERROR: Unable to contact google.com!"
@@ -775,7 +776,7 @@ f_setup_lvm() {
 }
 
 f_setup_gentoo_gpg() {
-    
+
     # initiate GPG environment
     f_msg info "###-### Step: Importing Gentoo GPG keys ---"
     f_download "${SECURIXFILES}/certificates/gentoo-gpg.pub" "${SECURIXFILESDR}/certificates/gentoo-gpg.pub"
@@ -826,9 +827,9 @@ f_setup_stage3() {
 f_setup_portage() {
     # changing context
     cd /mnt/gentoo
-    
+
     # download portage
-    # portage is GPG verified 
+    # portage is GPG verified
     f_msg info "###-### Step: Downloading Portage ---"
     f_download "${SX_PORTAGEFILE}" "${PORTAGEFILE}"
     statusd="${?}"
@@ -1131,7 +1132,7 @@ f_umount_fs() {
     # umounting filesystems
     f_msg info "###-### Step: Umounting filesystems ---"
     cd
-    
+
     if [ "${USELVM}" = "yes" ]; then
         for partitions in usr home opt var tmp; do
             umount "${MAPPER}${partitions}"
@@ -1167,6 +1168,7 @@ f_install_securix() {
     # execute all steps
     f_banner
     f_basic_check
+    f_check_networking
     f_installer_signature
     f_banner_system_setup
     f_ask_hostname
@@ -1203,7 +1205,7 @@ f_install_securix() {
     f_execute_chroot
     f_check_chroot
     f_umount_fs
-    f_banner_completed    
+    f_banner_completed
 }
 
 ##############################################################################
