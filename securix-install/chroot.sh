@@ -26,9 +26,9 @@
 #
 ##############################################################################
 
-CHROOTOK="/chroot.ok"
-CHROOTVAR="/chroot.var"
-SECURIXVERSION="$(date +%F)"
+CHROOTOK=${CHROOTOK:-"/chroot.ok"}
+CHROOTVAR=${CHROOTVAR:-"/chroot.var"}
+SECURIXVERSION=${SECURIXVERSION:-"$(date +%F)"}
 txtred='\e[0;31m'
 txtblue='\e[1;34m'
 txtgreen='\e[0;32m'
@@ -368,7 +368,7 @@ f_setup_securix_system() {
     chmod 0755 /usr/sbin/securix*
     chmod -R 0600 /etc/securix
     chmod -R 0665 /var/securix
-    
+
     # make securix cron symlinks
     for sx in hourly daily weekly monthly; do
         ln -s /usr/sbin/securix-cron /etc/cron.${sx}/sx-cron
@@ -395,16 +395,16 @@ f_setup_securix_system() {
     sed -i "/MAKEOPTS=/ c MAKEOPTS=\"-j${MOPTS}\"" /etc/genkernel.conf
     sed -i "/LUKS=/ c LUKS=\"${USELUKS}\"" /etc/genkernel.conf
     sed -i "/LVM=/ c LVM=\"${USELVM}\"" /etc/genkernel.conf
-    
+
     cp /etc/genkernel.conf /etc/genkernel.conf.bak
 
     # add root to motd group
     f_msg info "###-### Step: Adding root to motd group ---"
     usermod -a -G motd root
-    
+
     # add portage to trusted group - Grsec
     usermod -a -G wheel portage
-    
+
     # check if portage dir exist, because we will mount tempfs
     if [ ! -d /var/tmp/portage ]; then
         mkdir /var/tmp/portage
@@ -531,7 +531,7 @@ f_install_chroot() {
     f_setup_proxy
     f_create_securix_user
     f_create_rkhunter_data
-    f_all_done    
+    f_all_done
 }
 
 ##############################################################################
