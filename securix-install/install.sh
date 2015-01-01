@@ -775,7 +775,7 @@ f_setup_lvm() {
 }
 
 f_setup_gentoo_gpg() {
-    
+
     # initiate GPG environment
     f_msg info "###-### Step: Importing Gentoo GPG keys ---"
     f_download "${SECURIXFILES}/certificates/gentoo-gpg.pub" "${SECURIXFILESDR}/certificates/gentoo-gpg.pub"
@@ -826,9 +826,9 @@ f_setup_stage3() {
 f_setup_portage() {
     # changing context
     cd /mnt/gentoo
-    
+
     # download portage
-    # portage is GPG verified 
+    # portage is GPG verified
     f_msg info "###-### Step: Downloading Portage ---"
     f_download "${SX_PORTAGEFILE}" "${PORTAGEFILE}"
     statusd="${?}"
@@ -1131,7 +1131,7 @@ f_umount_fs() {
     # umounting filesystems
     f_msg info "###-### Step: Umounting filesystems ---"
     cd
-    
+
     if [ "${USELVM}" = "yes" ]; then
         for partitions in usr home opt var tmp; do
             umount "${MAPPER}${partitions}"
@@ -1203,7 +1203,79 @@ f_install_securix() {
     f_execute_chroot
     f_check_chroot
     f_umount_fs
-    f_banner_completed    
+    f_banner_completed
+}
+
+f_parse_cmd() {
+    # unset command line variables
+    unset AUTOBUILD CONFIGFILE SKIPSIGN SXDISK
+
+    # parse command line arguments (if any)
+    for argument in "${@}"; do
+        case "${argument}" in
+            -a|--auto|--autobuild)
+                # autobuild mode without questions, please verify default variables
+                # use it together with -c or -s as at least root password must be changed
+                AUTOBUILD="yes"
+                ;;
+            "--c="*|"--conf="*|"--config="*)
+                # load variables/setup from different file
+                CONFIGFILE="${argument#*=}"
+                f_msg info "Sourcing configuration file: ${CONFIGFILE}"
+                if [ -r "${CONFIGFILE}" ]; then
+                    source "${CONFIGFILE}"
+                else
+                    f_download "${CONFIGFILE}"
+                    source "${CONFIGFILE##*/}"
+                fi
+                ;;
+            -s|--skip|--skipsign)
+                # if you must modify install script, use this option
+                # it will skip script signature verification
+                SKIPSIGN="yes"
+                ;;
+            --mountlvm)
+                # for debug purposes or when you forget root password
+                # mount Securix LVM partitions
+                f_getvar "Please specify disk with Securix installation (example: /dev/sda): " SXDISK
+                f_msg info "--- Scanning for volume groups"
+                vgscan
+                vgchange -a y
+                f_msg info "--- Mounting /"
+                mount /dev/vg/root /mnt/gentoo
+                for mountpoint in usr home opt var tmp; do
+                    f_msg info "--- Mounting /${mountpoint}"
+                    mount "/dev/vg/${mountpoint}" "/mnt/gentoo/${mountpoint}"
+                done
+                mount "${SXDISK}1" /mnt/gentoo/boot
+                f_msg info "--- Changing context"
+                cd /mnt/gentoo
+                f_msg info "###-#### Youre now in Securix root folder (${PWD})"
+                exit
+                ;;
+            --mountluks)
+                # for debug purposes or when you forget root password
+                # mount Securix LUKS and LVM partitions
+                f_getvar "Please specify disk with Securix installation (example: /dev/sda): " SXDISK
+                f_msg info "--- Now opening LUKS"
+                cryptsetup luksOpen "${SXDISK}3" root
+                f_msg info "--- Scanning for volume groups"
+                vgscan
+                vgchange -a y
+                f_msg info "--- Mounting /"
+                mount /dev/mapper/root /mnt/gentoo
+                for mountpoint in usr home opt var tmp; do
+                    f_msg info "--- Mounting /${mountpoint}"
+                    mount "/dev/mapper/vg-${mountpoint}" "/mnt/gentoo/${mountpoint}"
+                done
+                mount "${SXDISK}1" /mnt/gentoo/boot
+                f_msg info "--- Changing context"
+                cd /mnt/gentoo
+                f_msg info "###-#### Youre now in Securix root folder (${PWD})"
+                exit
+                ;;
+        esac
+    done
 }
 
 ##############################################################################
@@ -1212,79 +1284,9 @@ f_install_securix() {
 #
 ##############################################################################
 
-# unset command line variables
-unset AUTOBUILD CONFIGFILE SKIPSIGN SXDISK
-
-# parse command line arguments (if any)
-for argument in "${@}"; do
-    case "${argument}" in
-        -a|--auto|--autobuild)
-            # autobuild mode without questions, please verify default variables
-            # use it together with -c or -s as at least root password must be changed
-            AUTOBUILD="yes"
-            ;;
-        "--c="*|"--conf="*|"--config="*)
-            # load variables/setup from different file
-            CONFIGFILE="${argument#*=}"
-            f_msg info "Sourcing configuration file: ${CONFIGFILE}"
-            if [ -r "${CONFIGFILE}" ]; then
-                source "${CONFIGFILE}"
-            else
-                f_download "${CONFIGFILE}"
-                source "${CONFIGFILE##*/}"
-            fi
-            ;;
-        -s|--skip|--skipsign)
-            # if you must modify install script, use this option
-            # it will skip script signature verification
-            SKIPSIGN="yes"
-            ;;
-        --mountlvm)
-            # for debug purposes or when you forget root password
-            # mount Securix LVM partitions
-            f_getvar "Please specify disk with Securix installation (example: /dev/sda): " SXDISK
-            f_msg info "--- Scanning for volume groups"
-            vgscan
-            vgchange -a y
-            f_msg info "--- Mounting /"
-            mount /dev/vg/root /mnt/gentoo
-            for mountpoint in usr home opt var tmp; do
-                f_msg info "--- Mounting /${mountpoint}"
-                mount "/dev/vg/${mountpoint}" "/mnt/gentoo/${mountpoint}"
-            done
-            mount "${SXDISK}1" /mnt/gentoo/boot
-            f_msg info "--- Changing context"
-            cd /mnt/gentoo
-            f_msg info "###-#### Youre now in Securix root folder (${PWD})"
-            exit
-            ;;
-        --mountluks)
-            # for debug purposes or when you forget root password
-            # mount Securix LUKS and LVM partitions
-            f_getvar "Please specify disk with Securix installation (example: /dev/sda): " SXDISK
-            f_msg info "--- Now opening LUKS"
-            cryptsetup luksOpen "${SXDISK}3" root
-            f_msg info "--- Scanning for volume groups"
-            vgscan
-            vgchange -a y
-            f_msg info "--- Mounting /"
-            mount /dev/mapper/root /mnt/gentoo
-            for mountpoint in usr home opt var tmp; do
-                f_msg info "--- Mounting /${mountpoint}"
-                mount "/dev/mapper/vg-${mountpoint}" "/mnt/gentoo/${mountpoint}"
-            done
-            mount "${SXDISK}1" /mnt/gentoo/boot
-            f_msg info "--- Changing context"
-            cd /mnt/gentoo
-            f_msg info "###-#### Youre now in Securix root folder (${PWD})"
-            exit
-            ;;
-    esac
-done
-
 # main execution
-f_install_securix
+f_parse_cmd ${1+"$@"}
+f_install_securix ${1+"$@"}
 
 exit
 exit_on_error
-
