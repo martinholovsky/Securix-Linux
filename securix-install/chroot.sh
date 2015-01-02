@@ -67,6 +67,62 @@ f_grep() {
     fi
 }
 
+f_download() {
+    #usage: f_download $link $backup-link
+    #example: f_download https://x.y.z/file.tgz https://mirror.x.y.z/file.tgz
+    if [ -z "${1}" ]; then
+        echo "--- Error: No URL provided"
+    fi
+    # propagate error code in pipelines
+    set -o pipefail
+    local downlink="${1}"
+    local backuplink="${2}"
+    local downfile="${downlink##*/}"
+    local backupfile="${backuplink##*/}"
+    local wgeterror="no"
+    # remove parameters from link
+    downfile="${downfile%%\?*}"
+    backupfile="${backupfile%%\?*}"
+    # remove previous files if any
+    rm -f ${downfile} ${backupfile}
+    echo "Downloading: ${downlink}"
+    echo -n "Status:     "
+    # wget version in gentoo minimal CD do not support PFS and https-only :(
+    wget --timeout=30 --no-cache --progress=dot -O "${downfile}" "${downlink}" 2>&1 | grep --line-buffered "%" | \
+        sed -u -e "s,\.,,g" | awk '{printf("\b\b\b\b%4s", $2)}'
+    if [ "${?}" -ne "0" ]; then
+        wgeterror="yes"
+    fi
+    echo " DONE"
+    if [ -f "${downfile}" -a "${wgeterror}" = "no" ]; then
+        downloaded="yes"
+        return 0
+    else
+        wgeterror="no"
+        if [ ! -z "${backuplink}" ]; then
+            echo "Downloading from mirror: ${backuplink}"
+            echo -n "Status:     "
+            # https-only not used as Gentoo mirrors usually dont have SSL
+            wget --timeout=30 --no-cache --progress=dot -O "${backupfile}" "${backuplink}" 2>&1 | grep --line-buffered "%" | \
+                sed -u -e "s,\.,,g" | awk '{printf("\b\b\b\b%4s", $2)}'
+            if [ "${?}" -ne "0" ]; then
+                wgeterror="yes"
+            fi
+            echo " DONE"
+            if [ -f "${backupfile}" -a "${wgeterror}" = "no" ]; then
+                downloaded="yes"
+                return 0
+            else
+                downloaded="no"
+                return 1
+            fi
+        else
+            downloaded="no"
+            return 1
+        fi
+    fi
+}
+
 # end script in case of error
 # exception: if statement, until and while loop, logical AND (&&) or OR (||)
 # trap also those exit signals: 1/HUP, 2/INT, 3/QUIT, 15/TERM, ERR
@@ -557,4 +613,3 @@ fi
 f_install_chroot
 
 exit
-exit_on_error
