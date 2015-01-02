@@ -611,6 +611,6 @@ if [ -r /chroot.config ]; then
 fi
 
 # main execution
-f_install_chroot
+f_install_chroot ${1+"$@"}
 
 exit
