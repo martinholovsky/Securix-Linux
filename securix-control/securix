@@ -656,5 +656,3 @@ rm -rf ${TEMPDIR}
 rm -f ${LOCKFILE}
 
 exit
-exit_on_error
-

@@ -112,3 +112,5 @@ f_msg info "###-### Checking another update sequence ---"
 # End
 cd $HOME
 rm -rf $TEMPDIR
+
+exit
