@@ -68,6 +68,7 @@ SECURIX_SYSTEMCONF=${SECURIX_SYSTEMCONF:-"/install/conf.tar.gz"}
 SECURIX_CHROOT=${SECURIX_CHROOT:-"/install/chroot.sh"}
 KERNELCONFIG=${KERNELCONFIG:-"/install/kernel/hardened-${ARCH}.config"}
 GMIRROR=${GMIRROR:-"http://ftp.fi.muni.cz/pub/linux/gentoo/"}
+GPG_EXTRA_OPTS=${GPG_EXTRA_OPTS:-"-quiet"}
 CPUS=$(grep -c '^processor' /proc/cpuinfo)
 MOPTS=$((CPUS + 1))
 GENKERNEL=${GENKERNEL:-"--install --symlink --save-config --makeopts=-j${MOPTS} --kernname=securix --kernel-config=/hardened-kernel.config"}
@@ -783,11 +784,11 @@ f_setup_gentoo_gpg() {
     f_download "${SECURIX_FILES}/certificates/gentoo-gpg-autobuild.pub" "${SECURIX_FILESDR}/certificates/gentoo-gpg-autobuild.pub"
     mkdir /etc/portage/gpg
     chmod 700 /etc/portage/gpg
-    gpg -quiet --homedir /etc/portage/gpg --import gentoo-gpg.pub
-    gpg -quiet --homedir /etc/portage/gpg --import gentoo-gpg-autobuild.pub
-    gpg -quiet --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
-    gpg -quiet --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
-    gpg -quiet --homedir /etc/portage/gpg -u DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D --verify "${STAGE3LATESTFILE##*/}.DIGESTS.asc"
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --import gentoo-gpg.pub
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --import gentoo-gpg-autobuild.pub
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg -u DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D --verify "${STAGE3LATESTFILE##*/}.DIGESTS.asc"
 }
 
 f_setup_stage3() {
@@ -1096,6 +1097,7 @@ SECURIX_HOSTNAME="${SECURIX_HOSTNAME}"
 VIRTUAL="${VIRTUAL}"
 VIRTUALHOST="${VIRTUALHOST}"
 AUTOBUILD="${AUTOBUILD}"
+GPG_EXTRA_OPTS="${GPG_EXTRA_OPTS}"
 !EOF
 
     # if really needed, config file can change some variables in chroot

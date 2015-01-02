@@ -479,10 +479,10 @@ f_setup_gentoo_gpg() {
     f_msg info "###-### Step: Importing Gentoo GPG keys ---"
     mkdir -p /etc/portage/gpg
     chmod 0700 /etc/portage/gpg
-    gpg --quiet --homedir /etc/portage/gpg --import /usr/share/securix/gentoo-gpg.pub
-    gpg --quiet --homedir /etc/portage/gpg --import /usr/share/securix/gentoo-gpg-autobuild.pub
-    gpg --quiet --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
-    gpg --quiet --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --import /usr/share/securix/gentoo-gpg.pub
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --import /usr/share/securix/gentoo-gpg-autobuild.pub
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
     echo "PORTAGE_GPG_DIR=\"/etc/portage/gpg\"" >> /etc/make.conf
     echo "# Disable 'emerge --sync', so emerge-webrsync will be used" >> /etc/make.conf
     echo "SYNC=\"\"" >> /etc/make.conf
