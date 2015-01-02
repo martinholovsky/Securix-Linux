@@ -55,17 +55,17 @@ esac
 # VARIABLE=${VARIABLE:-"Default value"}
 ##############################################################################
 
-SX_STAGE3BASEURL=${SX_STAGE3BASEURL:-"https://mirror.securix.org/releases/${ARCH}/autobuilds/"}
-SX_STAGE3LATESTTXT=${SX_STAGE3LATESTTXT:-"latest-stage3-${SUBARCH}-hardened.txt"}
-SX_PORTAGEFILE=${SX_PORTAGEFILE:-"https://mirror.securix.org/releases/snapshots/current/portage-latest.tar.bz2"}
+SECURIX_STAGE3BASEURL=${SECURIX_STAGE3BASEURL:-"https://mirror.securix.org/releases/${ARCH}/autobuilds/"}
+SECURIX_STAGE3LATESTTXT=${SECURIX_STAGE3LATESTTXT:-"latest-stage3-${SUBARCH}-hardened.txt"}
+SECURIX_PORTAGEFILE=${SECURIX_PORTAGEFILE:-"https://mirror.securix.org/releases/snapshots/current/portage-latest.tar.bz2"}
 # gentoo servers usually do not use https and if so, it is just self-signed certificate
 STAGE3BASEURL=${STAGE3BASEURL:-"http://distfiles.gentoo.org/releases/${ARCH}/autobuilds/"}
 STAGE3LATESTTXT=${STAGE3LATESTTXT:-"latest-stage3-${SUBARCH}-hardened.txt"}
 PORTAGEFILE=${PORTAGEFILE:-"http://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2"}
-SECURIXFILES=${SECURIXFILES:-"https://update.securix.org"}
-SECURIXFILESDR=${SECURIXFILESDR:-"http://securix.sourceforge.net"}
-SECURIXSYSTEMCONF=${SECURIXSYSTEMCONF:-"/install/conf.tar.gz"}
-SECURIXCHROOT=${SECURIXCHROOT:-"/install/chroot.sh"}
+SECURIX_FILES=${SECURIX_FILES:-"https://update.securix.org"}
+SECURIX_FILESDR=${SECURIX_FILESDR:-"http://securix.sourceforge.net"}
+SECURIX_SYSTEMCONF=${SECURIX_SYSTEMCONF:-"/install/conf.tar.gz"}
+SECURIX_CHROOT=${SECURIX_CHROOT:-"/install/chroot.sh"}
 KERNELCONFIG=${KERNELCONFIG:-"/install/kernel/hardened-${ARCH}.config"}
 GMIRROR=${GMIRROR:-"http://ftp.fi.muni.cz/pub/linux/gentoo/"}
 CPUS=$(grep -c '^processor' /proc/cpuinfo)
@@ -394,8 +394,8 @@ f_installer_signature() {
     # verifying securix installer
     if [ "${SKIPSIGN}" != "yes" ]; then
         f_msg warn "Verifying signature of installation script..."
-        f_download "${SECURIXFILES}/install/install.sh.sign" "${SECURIXFILESDR}/install/install.sh.sign"
-        f_download "${SECURIXFILES}/certificates/securix-codesign.pub" "${SECURIXFILESDR}/certificates/securix-codesign.pub"
+        f_download "${SECURIX_FILES}/install/install.sh.sign" "${SECURIX_FILESDR}/install/install.sh.sign"
+        f_download "${SECURIX_FILES}/certificates/securix-codesign.pub" "${SECURIX_FILESDR}/certificates/securix-codesign.pub"
         openssl dgst -sha512 -verify securix-codesign.pub -signature install.sh.sign "${BASH_SOURCE}"
         if [ "${?}" -ne "0" ]; then
             f_msg error "Verification failed!"
@@ -775,11 +775,11 @@ f_setup_lvm() {
 }
 
 f_setup_gentoo_gpg() {
-    
+
     # initiate GPG environment
     f_msg info "###-### Step: Importing Gentoo GPG keys ---"
-    f_download "${SECURIXFILES}/certificates/gentoo-gpg.pub" "${SECURIXFILESDR}/certificates/gentoo-gpg.pub"
-    f_download "${SECURIXFILES}/certificates/gentoo-gpg-autobuild.pub" "${SECURIXFILESDR}/certificates/gentoo-gpg-autobuild.pub"
+    f_download "${SECURIX_FILES}/certificates/gentoo-gpg.pub" "${SECURIX_FILESDR}/certificates/gentoo-gpg.pub"
+    f_download "${SECURIX_FILES}/certificates/gentoo-gpg-autobuild.pub" "${SECURIX_FILESDR}/certificates/gentoo-gpg-autobuild.pub"
     mkdir /etc/portage/gpg
     chmod 700 /etc/portage/gpg
     gpg -quiet --homedir /etc/portage/gpg --import gentoo-gpg.pub
@@ -795,15 +795,15 @@ f_setup_stage3() {
 
     # download stage3
     f_msg info "###-### Step: Downloading hardened stage ---"
-    f_download "${SX_STAGE3BASEURL}${STAGE3LATESTTXT}" "${STAGE3BASEURL}${STAGE3LATESTTXT}"
+    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTTXT}" "${STAGE3BASEURL}${STAGE3LATESTTXT}"
 
     # find path to latest stage3
     STAGE3LATESTFILE="$(grep -v '#' "${STAGE3LATESTTXT}")"
     # and download it
-    f_download "${SX_STAGE3BASEURL}${STAGE3LATESTFILE}" "${STAGE3BASEURL}${STAGE3LATESTFILE}"
+    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}" "${STAGE3BASEURL}${STAGE3LATESTFILE}"
     statusd="${?}"
-    f_download "${SX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS" "${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS"
-    f_download "${SX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc" "${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc"
+    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS" "${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS"
+    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc" "${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc"
 
     # check SHA512
     STAGE3SUM="$(sha512sum "${STAGE3LATESTFILE##*/}")"
@@ -826,23 +826,23 @@ f_setup_stage3() {
 f_setup_portage() {
     # changing context
     cd /mnt/gentoo
-    
+
     # download portage
-    # portage is GPG verified 
+    # portage is GPG verified
     f_msg info "###-### Step: Downloading Portage ---"
-    f_download "${SX_PORTAGEFILE}" "${PORTAGEFILE}"
+    f_download "${SECURIX_PORTAGEFILE}" "${PORTAGEFILE}"
     statusd="${?}"
-    f_download "${SX_PORTAGEFILE}.md5sum" "${PORTAGEFILE}.md5sum"
-    f_download "${SX_PORTAGEFILE}.gpgsig" "${PORTAGEFILE}.gpgsig"
+    f_download "${SECURIX_PORTAGEFILE}.md5sum" "${PORTAGEFILE}.md5sum"
+    f_download "${SECURIX_PORTAGEFILE}.gpgsig" "${PORTAGEFILE}.gpgsig"
     # verify portage GPG
-    gpg --homedir /etc/portage/gpg -u 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910 --verify "${SX_PORTAGEFILE##*/}.gpgsig" "${SX_PORTAGEFILE##*/}"
+    gpg --homedir /etc/portage/gpg -u 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910 --verify "${SECURIX_PORTAGEFILE##*/}.gpgsig" "${SECURIX_PORTAGEFILE##*/}"
     if [ "${?}" -ne "0" ]; then
         f_msg error "Gentoo GPG signature of Portage file do not match !!"
         exit_on_error
     fi
 
     # check MD5
-    md5sum --status -c "${SX_PORTAGEFILE##*/}.md5sum"
+    md5sum --status -c "${SECURIX_PORTAGEFILE##*/}.md5sum"
     statusc="${?}"
     if [ "${statusd}" -ne "0" -o "${statusc}" -ne "0" ]; then
         f_msg error "ERROR: There was problem with download or checksum of Portage. Exit codes: "
@@ -853,19 +853,19 @@ f_setup_portage() {
     fi
 
     f_msg info "###-### Step: Extracting Portage ---"
-    tar xmjf "${SX_PORTAGEFILE##*/}" -C /mnt/gentoo/usr --checkpoint=.1000
+    tar xmjf "${SECURIX_PORTAGEFILE##*/}" -C /mnt/gentoo/usr --checkpoint=.1000
     echo " DONE"
-    rm -f "${SX_PORTAGEFILE##*/}" *.md5sum *.gpgsig
+    rm -f "${SECURIX_PORTAGEFILE##*/}" *.md5sum *.gpgsig
 }
 
 f_download_securix_conf() {
     f_msg info "###-### Step: Downloading Securix system configuration ---"
-    f_download "${SECURIXFILES}${SECURIXSYSTEMCONF}" "${SECURIXFILESDR}${SECURIXSYSTEMCONF}"
+    f_download "${SECURIX_FILES}${SECURIX_SYSTEMCONF}" "${SECURIX_FILESDR}${SECURIX_SYSTEMCONF}"
 }
 
 f_download_chroot() {
     f_msg info "###-### Step: Downloading CHROOT script ---"
-    f_download "${SECURIXFILES}${SECURIXCHROOT}" "${SECURIXFILESDR}${SECURIXCHROOT}"
+    f_download "${SECURIX_FILES}${SECURIX_CHROOT}" "${SECURIX_FILESDR}${SECURIX_CHROOT}"
 }
 
 f_download_hardened() {
@@ -874,14 +874,14 @@ f_download_hardened() {
         GENKERNEL="${GENKERNEL} --menuconfig"
     fi
 
-    f_download "${SECURIXFILES}${KERNELCONFIG}" "${SECURIXFILESDR}${KERNELCONFIG}"
+    f_download "${SECURIX_FILES}${KERNELCONFIG}" "${SECURIX_FILESDR}${KERNELCONFIG}"
     mv "${KERNELCONFIG##*/}" hardened-kernel.config
 }
 
 f_verify_signature() {
     f_msg info "###-### Step: Downloading SHA512 list ---"
-    f_download "${SECURIXFILES}/install/sha512.hash" "${SECURIXFILESDR}/install/sha512.hash"
-    f_download "${SECURIXFILES}/install/sha512.hash.sign" "${SECURIXFILESDR}/install/sha512.hash.sign"
+    f_download "${SECURIX_FILES}/install/sha512.hash" "${SECURIX_FILESDR}/install/sha512.hash"
+    f_download "${SECURIX_FILES}/install/sha512.hash.sign" "${SECURIX_FILESDR}/install/sha512.hash.sign"
 
     f_msg info "###-### Step: Computing checksum ---"
     grep -E "chroot.sh|conf.tar.gz" sha512.hash > checksum
@@ -896,7 +896,7 @@ f_verify_signature() {
     fi
 
     f_msg info "###-### Step: Verifying Securix files signature ---"
-    f_download "${SECURIXFILES}/certificates/securix-codesign.pub" "${SECURIXFILESDR}/certificates/securix-codesign.pub"
+    f_download "${SECURIX_FILES}/certificates/securix-codesign.pub" "${SECURIX_FILESDR}/certificates/securix-codesign.pub"
     openssl dgst -sha512 -verify securix-codesign.pub -signature sha512.hash.sign sha512.hash
 }
 
@@ -1131,7 +1131,7 @@ f_umount_fs() {
     # umounting filesystems
     f_msg info "###-### Step: Umounting filesystems ---"
     cd
-    
+
     if [ "${USELVM}" = "yes" ]; then
         for partitions in usr home opt var tmp; do
             umount "${MAPPER}${partitions}"
@@ -1203,7 +1203,7 @@ f_install_securix() {
     f_execute_chroot
     f_check_chroot
     f_umount_fs
-    f_banner_completed    
+    f_banner_completed
 }
 
 ##############################################################################
