@@ -8,6 +8,7 @@
 RELEASE: 20150102
     
 - minor improvements
+- fixed build issues
 
 RELEASE: 20141230
     
