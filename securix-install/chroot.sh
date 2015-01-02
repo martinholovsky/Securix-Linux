@@ -439,6 +439,9 @@ f_setup_securix_system() {
 
     # iptables
     chmod u+x /etc/conf.d/iptables.rules
+    
+    # rkhunter one-time job
+    chmod u+x /etc/cron.hourly/sx-once-rkhunter
 
     # disable "Three Finger Salute"
     sed -i 's/ca\:12345/\#ca\:12345/g' /etc/inittab
@@ -559,6 +562,24 @@ f_create_rkhunter_data() {
     rkhunter --propupd
 }
 
+f_send_mail() {
+    # try send mail to root
+    cat > mail_test << !EOF
+Dear administrator,
+
+please be informed that you successfuly install Securix GNU/Linux on server ${HOSTNAME}.
+
+Thank you
+!EOF
+    f_msg info "###-### Step: Sending test mail to root"
+    mail -s "Securix installation on ${HOSTNAME}" root < mail_test 2>mail_error
+    if [ -r "mail_error" ]; then
+        f_msg warn "--- We have identified issue when sending mail to root. Please set appropriately /etc/ssmtp/ssmtp.conf"
+    fi
+    # cleanup
+    rm -f mail_error mail_test
+}
+
 f_all_done() {
     # --- ALL DONE ---
     f_msg info "###-### Step: CHROOT script completed ---"
@@ -594,6 +615,7 @@ f_install_chroot() {
     f_setup_proxy
     f_create_securix_user
     f_create_rkhunter_data
+    f_send_mail
     f_all_done
 }
 
