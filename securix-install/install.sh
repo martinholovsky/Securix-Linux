@@ -379,8 +379,9 @@ f_basic_check() {
     else
         touch "${LOCKFILE}"
     fi
+}
 
-    # check networking
+f_check_networking() {
     wget --timeout=30 --delete-after -q http://www.google.com || google_check="${?}"
     if [ ! -z "${google_check}" ]; then
         f_msg error "ERROR: Unable to contact google.com!"
@@ -1167,6 +1168,7 @@ f_install_securix() {
     # execute all steps
     f_banner
     f_basic_check
+    f_check_networking
     f_installer_signature
     f_banner_system_setup
     f_ask_hostname
