@@ -5,6 +5,22 @@
 #
 #-#
 
+RELEASE: 20150102
+    
+- minor improvements
+- fixed build issues
+
+RELEASE: 20141230
+    
+- redesign of install.sh
+- redesign of chroot.sh
+- fixed #59 #69
+- coding convention updated
+
+RELEASE: 20141222
+    
+- redesign of install.sh script #68
+
 RELEASE: 20141221
     
 - fixed issue #1 syslog-ng configuration

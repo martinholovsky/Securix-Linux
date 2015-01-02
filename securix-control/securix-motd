@@ -37,26 +37,16 @@ countcritical=0
 SAVEIFS="$IFS"
 IFS="
 "
+SECURIXVAR="/var/securix"
+
+# unset trap - in case of failure user will not be able to login
+trap - 1 2 3 15 ERR
 
 ##############################################################################
 #
 # FUNCTIONS
 #
 ##############################################################################
-
-# load securix functions
-if [ ! -r /usr/sbin/securix-functions ]; then
-    echo "--- PROBLEM: /usr/sbin/securix-functions doesnt exist!!"
-    logger "CRITICAL: /usr/sbin/securix-functions doesnt exist!!"
-    exit 1
-else
-    . /usr/sbin/securix-functions
-fi
-
-# motd is for interactive sessions only
-if [ "$INTERACTIVE" = "no" ]; then
-    exit 0
-fi
 
 f_append() {
     #usage: f_append character number
@@ -70,71 +60,61 @@ f_append() {
     APPEND=${APPEND:0:$2}
 }
 
-##############################################################################
+
 #
-# MAIN
+# Generate MOTD
 #
-##############################################################################
 
-# unset trap - in case of failure user will not be able to login
-trap - 1 2 3 15 ERR
+f_generate_motd() {
+    # check permission level
+    for group in ${GROUPS[@]}; do
+        if [ $group -eq 0 ]; then
+            permission="Root"
+        elif [ $group -eq 111 ]; then
+            permission="Admin"
+        elif [ $group -eq 222 -a "$permission" != "Admin" ]; then
+            permission="Operator"
+        elif [ -z $permission ]; then
+            permission="User"
+        fi
+    done
 
-# execute only if user is member of motd group
-for group in ${GROUPS[@]}; do
-    if [ $group -ne 555 ]; then
-        exit 0
+    # check cron
+    if [ $(find ${SECURIXVAR}/securix.cron -mmin +90 2>/dev/null) ]; then
+        cronstatus="PROBLEM"
+    else
+        cronstatus="OK"
     fi
-done
 
-# check permission level
-for group in ${GROUPS[@]}; do
-    if [ $group -eq 0 ]; then
-        permission="Root"
-    elif [ $group -eq 111 ]; then
-        permission="Admin"
-    elif [ $group -eq 222 -a "$permission" != "Admin" ]; then
-        permission="Operator"
-    elif [ -z $permission ]; then
-        permission="User"
+    # check disk space/inode
+    if [ -s ${SECURIXVAR}/disk-space.critical -o -s ${SECURIXVAR}/inode-space.critical ]; then
+        diskstatus="PROBLEM"
+    else
+        diskstatus="OK"
     fi
-done
 
-# check cron
-if [ $(find ${SECURIXVAR}/securix.cron -mmin +90 2>/dev/null) ]; then
-    cronstatus="PROBLEM"
-else
-    cronstatus="OK"
-fi
+    # check securix-mailer status
+    if [ -s ${SECURIXVAR}/securix-mailer.critical ]; then
+        mailerstatus="PROBLEM"
+    else
+        mailerstatus="OK"
+    fi
 
-# check disk space/inode
-if [ -s ${SECURIXVAR}/disk-space.critical -o -s ${SECURIXVAR}/inode-space.critical ]; then
-    diskstatus="PROBLEM"
-else
-    diskstatus="OK"
-fi
+    # check services
+    if [ -r ${SECURIXVAR}/rc-status.warning ]; then
+        servicestatus="PROBLEM"
+    else
+        servicestatus="OK"
+    fi
 
-# check securix-mailer status
-if [ -s ${SECURIXVAR}/securix-mailer.critical ]; then
-    mailerstatus="PROBLEM"
-else
-    mailerstatus="OK"
-fi
+    # get system load
+    systemload=$(awk '{ print $1" "$2" "$3 }' /proc/loadavg)
 
-# check services
-if [ -r ${SECURIXVAR}/rc-status.warning ]; then
-    servicestatus="PROBLEM"
-else
-    servicestatus="OK"
-fi
+    # get last reboot
+    lastreboot=$(uptime | awk -F'( |,)' '{print $4" "$5" "$6 $7}')
 
-# get system load
-systemload=$(awk '{ print $1" "$2" "$3 }' /proc/loadavg)
-
-# get last reboot
-lastreboot=$(uptime | awk -F'( |,)' '{print $4" "$5" "$6 $7}')
-
-# generate motd data file
-echo "
+    # generate motd data file
+    echo "
 Hostname: ${HOSTNAME}
 Kernel: $(uname -r)
 Load: ${systemload}
@@ -145,6 +125,7 @@ Cron: ${cronstatus}
 Mailer: ${mailerstatus}
 Services: ${servicestatus}
 " > ~/securix.motd
+}
 
 # motd messages for operators/admin only
 f_operatormotd() {
@@ -213,87 +194,107 @@ Alerts: Info(${countinfo}) Warn(${countwarning}) Critical(${countcritical})
 " >> ~/securix.motd
 }
 
-# if user is member of privileged group add additional information
-if [ "$permission" = "Admin" -o "$permission" = "Operator" -o $EUID -eq 0 ]; then
-    f_operatormotd
-fi
-
 #
 # Print MOTD section
 #
 
-# max line lenght
-maxsize=$(wc -L ~/securix.motd)
-maxsize=${maxsize%% *}
+f_print_motd() {
+    # max line lenght
+    maxsize=$(wc -L ~/securix.motd)
+    maxsize=${maxsize%% *}
 
-# get number of possible columns
-columns=$((width / (maxsize + 4)))
-# get number of characters per column
-chars=$((width / columns))
+    # get number of possible columns
+    columns=$((width / (maxsize + 4)))
+    # get number of characters per column
+    chars=$((width / columns))
 
-# print motd header
-motdheader="=== Securix - hardened linux "
-fill=$((width - ${#motdheader}))
-f_append "=" $fill
-echo "${motdheader}${APPEND}"
-motdheader="| Welcome, ${USER^}"
-fill=$((width - (${#motdheader} + 1)))
-f_append " " $fill
-echo "${motdheader}${APPEND}|"
-fill=$((width - 2))
-f_append " " $fill
-echo "|${APPEND}|"
+    # print motd header
+    motdheader="=== Securix - hardened linux "
+    fill=$((width - ${#motdheader}))
+    f_append "=" $fill
+    echo "${motdheader}${APPEND}"
+    motdheader="| Welcome, ${USER^}"
+    fill=$((width - (${#motdheader} + 1)))
+    f_append " " $fill
+    echo "${motdheader}${APPEND}|"
+    fill=$((width - 2))
+    f_append " " $fill
+    echo "|${APPEND}|"
 
-# print motd body in columns
-for motdbody in $(cat ~/securix.motd); do
-    size=${#motdbody}
-    if [ $size -lt $chars ]; then
-        # +4 because "| MSG  "
-        fill=$((chars - (size + 4)))
-        f_append " " $fill
-        echo -n "| ${motdbody}${APPEND}"
-        ((colnumber++))
-        if [ $colnumber -eq $columns ]; then
-            fill=$((width - (columns * chars)))
+    # print motd body in columns
+    for motdbody in $(cat ~/securix.motd); do
+        size=${#motdbody}
+        if [ $size -lt $chars ]; then
+            # +4 because "| MSG  "
+            fill=$((chars - (size + 4)))
             f_append " " $fill
-            echo "${APPEND} |"
-            colnumber=0
-        else
-        	echo -n "  "
+            echo -n "| ${motdbody}${APPEND}"
+            ((colnumber++))
+            if [ $colnumber -eq $columns ]; then
+                fill=$((width - (columns * chars)))
+                f_append " " $fill
+                echo "${APPEND} |"
+                colnumber=0
+            else
+            	echo -n "  "
+            fi
         fi
+    done
+
+    # finish last line
+    if [ $colnumber -ne 0 ]; then
+        # number of columns left to end of line
+        fill=$(((columns - colnumber) * chars))
+        f_append " " $fill
+        echo "${APPEND} |"
+    fi
+
+    # print system limits on separate line
+    motdlimits="| Limits: $(ulimit -a | grep -vE '\) 0|unlimited' | grep -E '\-n|\-u|\-f' | cut -d'(' -f2 | cut -d',' -f2 | \
+       sed 's/)//g;s/-n/open files:/g;s/-u/max processes:/g;s/-f/file size:/g' | awk '{ printf ("%s ",$0) }' )"
+    fill=$((width - (${#motdlimits} + 1)))
+    f_append " " $fill
+    echo "${motdlimits}${APPEND}|"
+
+    # print motd footer
+    fill=$((width - 2))
+    f_append " " $fill
+    echo "|${APPEND}|"
+    motdfooter="| Run \"securix status\" for more information about issues found in system"
+    fill=$((width - (${#motdfooter} + 1)))
+    f_append " " $fill
+    echo "${motdfooter}${APPEND}|"
+    motdfooter="...==="
+    fill=$((width - ${#motdfooter}))
+    f_append "=" $fill
+    echo "${APPEND}${motdfooter}"
+}
+
+#
+# MAIN
+#
+
+# find if user is member of motd group
+unset MOTD
+for group in ${GROUPS[@]}; do
+    if [ $group -eq 555 ]; then
+        MOTD="yes"
     fi
 done
 
-# finish last line
-if [ $colnumber -ne 0 ]; then
-    # number of columns left to end of line
-    fill=$(((columns - colnumber) * chars))
-    f_append " " $fill
-    echo "${APPEND} |"
+# execute only if user is member of motd group and session is interactive
+# detection of interactive shell is done in /etc/profile.d/sx-motd.sh
+if [ "$MOTD" = "yes" -a "$INTERACTIVE" = "yes" ]; then
+    # generate motd file
+    f_generate_motd
+    # if user is member of privileged group add additional information
+    if [ "$permission" = "Admin" -o "$permission" = "Operator" -o $EUID -eq 0 ]; then
+        f_operatormotd
+    fi
+    # finally print motd
+    f_print_motd
+    rm ~/securix.motd
 fi
-
-# print system limits on separate line
-motdlimits="| Limits: $(ulimit -a | grep -vE '\) 0|unlimited' | grep -E '\-n|\-u|\-f' | cut -d'(' -f2 | cut -d',' -f2 | \
-       sed 's/)//g;s/-n/open files:/g;s/-u/max processes:/g;s/-f/file size:/g' | awk '{ printf ("%s ",$0) }' )"
-fill=$((width - (${#motdlimits} + 1)))
-f_append " " $fill
-echo "${motdlimits}${APPEND}|"
-
-# print motd footer
-fill=$((width - 2))
-f_append " " $fill
-echo "|${APPEND}|"
-motdfooter="| Run \"securix status\" for more information about issues found in system"
-fill=$((width - (${#motdfooter} + 1)))
-f_append " " $fill
-echo "${motdfooter}${APPEND}|"
-motdfooter="...==="
-fill=$((width - ${#motdfooter}))
-f_append "=" $fill
-echo "${APPEND}${motdfooter}"
-
-
 
 # end
 IFS="$SAVEIFS"
-rm ~/securix.motd
