@@ -788,7 +788,7 @@ f_setup_gentoo_gpg() {
     gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --import gentoo-gpg-autobuild.pub
     gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
     gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
-    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg -u DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D --verify "${STAGE3LATESTFILE##*/}.DIGESTS.asc"
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --verify "${STAGE3LATESTFILE##*/}.DIGESTS.asc"
 }
 
 f_setup_stage3() {
