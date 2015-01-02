@@ -282,7 +282,7 @@ f_download() {
 f_dmesg() {
     #example: f_dmesg ttyS USERSERIAL
     #if string exist 2nd parameter have value "yes"
-    dmesg | grep "${1}" > /dev/null
+    grep "${1}" /var/log/dmesg > /dev/null
     if [ "${?}" -eq "0" ]; then
         export "${2}"="yes"
     else
@@ -470,7 +470,7 @@ f_check_dmraid() {
 
 f_check_virtual() {
     # check virtual environment
-    f_dmesg "-i virtual" VIRTUAL
+    f_dmesg '-i virtual' VIRTUAL
     if [ "${VIRTUAL}" = "yes" ]; then
         f_msg info "-- It seems that installer is running under virtual machine (VirtualBox, VMware, ...)"
         f_yesno "Securix have pre-defined kernel setup for VM's. Do you want to use it?" VIRTUAL

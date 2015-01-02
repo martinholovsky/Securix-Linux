@@ -26,9 +26,9 @@
 #
 ##############################################################################
 
-CHROOTOK="/chroot.ok"
-CHROOTVAR="/chroot.var"
-SECURIXVERSION="$(date +%F)"
+CHROOTOK=${CHROOTOK:-"/chroot.ok"}
+CHROOTVAR=${CHROOTOK:-"/chroot.var"}
+SECURIXVERSION=${SECURIXVERSION:-"$(date +%F)"}
 txtred='\e[0;31m'
 txtblue='\e[1;34m'
 txtgreen='\e[0;32m'
