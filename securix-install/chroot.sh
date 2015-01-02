@@ -176,6 +176,7 @@ f_setup_hostname() {
     # set hostname
     f_msg info "###-### Step: Hostname setup ---"
     hostname "${SECURIX_HOSTNAME}"
+    export HOSTNAME="${SECURIX_HOSTNAME}"
 }
 
 f_setup_network_rc() {
@@ -307,7 +308,7 @@ f_emerge_apps() {
 htop tcpdump lsof rkhunter tcptraceroute strace app-misc/mc dmidecode zip ftp \
 ethtool net-tools iproute2 mirrorselect net-misc/telnet-bsd app-misc/screen \
 whois bind-tools app-crypt/gnupg iftop netcat colordiff unhide scrub pwgen \
-pyinotify traceroute wget
+pyinotify traceroute wget app-editors/vim
 
     revdep-rebuild --quiet
 }
@@ -352,8 +353,8 @@ f_setup_grub() {
     # setup grub
     f_msg info "###-### Step: Setting Grub ---"
 
-    KERNELIMG="/boot/*kernel*securix*"
-    INITRAMIMG="/boot/*initramfs*securix*"
+    KERNELIMG=$(ls /boot/*kernel*securix*)
+    INITRAMIMG=$(ls /boot/*initramfs*securix*)
 
     cat > /boot/grub/grub.conf << !EOF
 # info: Securix GNU/Linux grub.conf
