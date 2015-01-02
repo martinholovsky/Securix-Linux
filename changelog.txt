@@ -5,6 +5,10 @@
 #
 #-#
 
+RELEASE: 20150102
+    
+- minor improvements
+
 RELEASE: 20141230
     
 - redesign of install.sh
