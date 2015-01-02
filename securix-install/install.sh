@@ -472,7 +472,7 @@ f_check_dmraid() {
 
 f_check_virtual() {
     # check virtual environment
-    f_dmesg '-i virtual' VIRTUAL
+    f_dmesg "virtual" VIRTUAL
     if [ "${VIRTUAL}" = "yes" ]; then
         f_msg info "-- It seems that installer is running under virtual machine (VirtualBox, VMware, ...)"
         f_yesno "Securix have pre-defined kernel setup for VM's. Do you want to use it?" VIRTUAL
@@ -776,21 +776,6 @@ f_setup_lvm() {
     fi
 }
 
-f_setup_gentoo_gpg() {
-
-    # initiate GPG environment
-    f_msg info "###-### Step: Importing Gentoo GPG keys ---"
-    f_download "${SECURIX_FILES}/certificates/gentoo-gpg.pub" "${SECURIX_FILESDR}/certificates/gentoo-gpg.pub"
-    f_download "${SECURIX_FILES}/certificates/gentoo-gpg-autobuild.pub" "${SECURIX_FILESDR}/certificates/gentoo-gpg-autobuild.pub"
-    mkdir /etc/portage/gpg
-    chmod 700 /etc/portage/gpg
-    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --import gentoo-gpg.pub
-    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --import gentoo-gpg-autobuild.pub
-    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
-    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
-    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --verify "${STAGE3LATESTFILE##*/}.DIGESTS.asc"
-}
-
 f_setup_stage3() {
     # changing context
     cd /mnt/gentoo
@@ -823,6 +808,21 @@ f_setup_stage3() {
     tar xjpf "${STAGE3LATESTFILE##*/}" --checkpoint=.1000
     echo " DONE"
     rm -f "${STAGE3LATESTFILE##*/}" "${STAGE3LATESTTXT}" *.DIGESTS *.CONTENTS *.asc
+}
+
+f_setup_gentoo_gpg() {
+
+    # initiate GPG environment
+    f_msg info "###-### Step: Importing Gentoo GPG keys ---"
+    f_download "${SECURIX_FILES}/certificates/gentoo-gpg.pub" "${SECURIX_FILESDR}/certificates/gentoo-gpg.pub"
+    f_download "${SECURIX_FILES}/certificates/gentoo-gpg-autobuild.pub" "${SECURIX_FILESDR}/certificates/gentoo-gpg-autobuild.pub"
+    mkdir /etc/portage/gpg
+    chmod 700 /etc/portage/gpg
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --import gentoo-gpg.pub
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --import gentoo-gpg-autobuild.pub
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --verify "${STAGE3LATESTFILE##*/}.DIGESTS.asc"
 }
 
 f_setup_portage() {
@@ -1187,8 +1187,8 @@ f_install_securix() {
     f_setup_disk_encryption
     f_setup_volumes
     f_setup_lvm
-    f_setup_gentoo_gpg
     f_setup_stage3
+    f_setup_gentoo_gpg
     f_setup_portage
     f_download_securix_conf
     f_download_chroot

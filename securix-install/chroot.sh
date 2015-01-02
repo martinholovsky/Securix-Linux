@@ -27,7 +27,7 @@
 ##############################################################################
 
 CHROOTOK=${CHROOTOK:-"/chroot.ok"}
-CHROOTVAR=${CHROOTOK:-"/chroot.var"}
+CHROOTVAR=${CHROOTVAR:-"/chroot.var"}
 SECURIXVERSION=${SECURIXVERSION:-"$(date +%F)"}
 txtred='\e[0;31m'
 txtblue='\e[1;34m'
