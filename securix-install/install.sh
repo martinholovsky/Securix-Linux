@@ -59,9 +59,9 @@ SECURIX_STAGE3BASEURL=${SECURIX_STAGE3BASEURL:-"https://mirror.securix.org/relea
 SECURIX_STAGE3LATESTTXT=${SECURIX_STAGE3LATESTTXT:-"latest-stage3-${SUBARCH}-hardened.txt"}
 SECURIX_PORTAGEFILE=${SECURIX_PORTAGEFILE:-"https://mirror.securix.org/releases/snapshots/current/portage-latest.tar.bz2"}
 # gentoo servers usually do not use https and if so, it is just self-signed certificate
-STAGE3BASEURL=${STAGE3BASEURL:-"http://distfiles.gentoo.org/releases/${ARCH}/autobuilds/"}
+GENTOO_STAGE3BASEURL=${GENTOO_STAGE3BASEURL:-"http://distfiles.gentoo.org/releases/${ARCH}/autobuilds/"}
 STAGE3LATESTTXT=${STAGE3LATESTTXT:-"latest-stage3-${SUBARCH}-hardened.txt"}
-PORTAGEFILE=${PORTAGEFILE:-"http://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2"}
+GENTOO_PORTAGEFILE=${GENTOO_PORTAGEFILE:-"http://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2"}
 SECURIX_FILES=${SECURIX_FILES:-"https://update.securix.org"}
 SECURIX_FILESDR=${SECURIX_FILESDR:-"http://securix.sourceforge.net"}
 SECURIX_SYSTEMCONF=${SECURIX_SYSTEMCONF:-"/install/conf.tar.gz"}
@@ -796,15 +796,15 @@ f_setup_stage3() {
 
     # download stage3
     f_msg info "###-### Step: Downloading hardened stage ---"
-    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTTXT}" "${STAGE3BASEURL}${STAGE3LATESTTXT}"
+    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTTXT}" "${GENTOO_STAGE3BASEURL}${STAGE3LATESTTXT}"
 
     # find path to latest stage3
     STAGE3LATESTFILE="$(grep -v '#' "${STAGE3LATESTTXT}")"
     # and download it
-    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}" "${STAGE3BASEURL}${STAGE3LATESTFILE}"
+    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}" "${GENTOO_STAGE3BASEURL}${STAGE3LATESTFILE}"
     statusd="${?}"
-    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS" "${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS"
-    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc" "${STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc"
+    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS" "${GENTOO_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS"
+    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc" "${GENTOO_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc"
 
     # check SHA512
     STAGE3SUM="$(sha512sum "${STAGE3LATESTFILE##*/}")"
@@ -817,11 +817,11 @@ f_setup_stage3() {
     else
         echo "-- SHA512 checksum: OK"
     fi
-    
+
     # verify stage3 GPG
     f_msg info "###-### Step: Verifying Stage3 GPG signature"
     gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --verify "${STAGE3LATESTFILE##*/}.DIGESTS.asc"
-    
+
     f_msg info "###-### Step: Extracting stage ---"
     tar xjpf "${STAGE3LATESTFILE##*/}" --checkpoint=.1000
     echo " DONE"
@@ -835,10 +835,10 @@ f_setup_portage() {
     # download portage
     # portage is GPG verified
     f_msg info "###-### Step: Downloading Portage ---"
-    f_download "${SECURIX_PORTAGEFILE}" "${PORTAGEFILE}"
+    f_download "${SECURIX_PORTAGEFILE}" "${GENTOO_PORTAGEFILE}"
     statusd="${?}"
-    f_download "${SECURIX_PORTAGEFILE}.md5sum" "${PORTAGEFILE}.md5sum"
-    f_download "${SECURIX_PORTAGEFILE}.gpgsig" "${PORTAGEFILE}.gpgsig"
+    f_download "${SECURIX_PORTAGEFILE}.md5sum" "${GENTOO_PORTAGEFILE}.md5sum"
+    f_download "${SECURIX_PORTAGEFILE}.gpgsig" "${GENTOO_PORTAGEFILE}.gpgsig"
     # verify portage GPG
     gpg --homedir /etc/portage/gpg -u 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910 --verify "${SECURIX_PORTAGEFILE##*/}.gpgsig" "${SECURIX_PORTAGEFILE##*/}"
     if [ "${?}" -ne "0" ]; then
