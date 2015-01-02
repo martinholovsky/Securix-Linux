@@ -368,7 +368,7 @@ f_setup_securix_system() {
     chmod 0755 /usr/sbin/securix*
     chmod -R 0600 /etc/securix
     chmod -R 0665 /var/securix
-    
+
     # make securix cron symlinks
     for sx in hourly daily weekly monthly; do
         ln -s /usr/sbin/securix-cron /etc/cron.${sx}/sx-cron
@@ -386,6 +386,12 @@ f_setup_securix_system() {
     # disable "Three Finger Salute"
     sed -i 's/ca\:12345/\#ca\:12345/g' /etc/inittab
 
+    # add root to motd group
+    f_msg info "###-### Step: Adding root to motd group ---"
+    usermod -a -G motd root
+}
+
+f_setup_genkernel() {
     # Genkernel
     sed -i "/SYMLINK=/ c SYMLINK=\"yes\"" /etc/genkernel.conf
     sed -i "/BOOTLOADER=/ c BOOTLOADER=\"grub\"" /etc/genkernel.conf
@@ -395,16 +401,14 @@ f_setup_securix_system() {
     sed -i "/MAKEOPTS=/ c MAKEOPTS=\"-j${MOPTS}\"" /etc/genkernel.conf
     sed -i "/LUKS=/ c LUKS=\"${USELUKS}\"" /etc/genkernel.conf
     sed -i "/LVM=/ c LVM=\"${USELVM}\"" /etc/genkernel.conf
-    
-    cp /etc/genkernel.conf /etc/genkernel.conf.bak
 
-    # add root to motd group
-    f_msg info "###-### Step: Adding root to motd group ---"
-    usermod -a -G motd root
-    
+    cp /etc/genkernel.conf /etc/genkernel.conf.bak
+}
+
+f_setup_portage() {
     # add portage to trusted group - Grsec
     usermod -a -G wheel portage
-    
+
     # check if portage dir exist, because we will mount tempfs
     if [ ! -d /var/tmp/portage ]; then
         mkdir /var/tmp/portage
@@ -525,13 +529,15 @@ f_install_chroot() {
     f_setup_grub
     f_unpack_securix_config
     f_setup_securix_system
+    f_setup_genkernel
+    f_setup_portage
     f_setup_gentoo_gpg
     f_setup_ntp
     f_setup_mail
     f_setup_proxy
     f_create_securix_user
     f_create_rkhunter_data
-    f_all_done    
+    f_all_done
 }
 
 ##############################################################################
