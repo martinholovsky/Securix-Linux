@@ -439,16 +439,19 @@ f_setup_securix_system() {
 
     # iptables
     chmod u+x /etc/conf.d/iptables.rules
-    
+
     # rkhunter one-time job
     chmod u+x /etc/cron.hourly/sx-once-rkhunter
-
-    # disable "Three Finger Salute"
-    sed -i 's/ca\:12345/\#ca\:12345/g' /etc/inittab
 
     # add root to motd group
     f_msg info "###-### Step: Adding root to motd group ---"
     usermod -a -G motd root
+}
+
+f_three_finger_salute_disable() {
+    # https://github.com/martincmelik/Securix-Linux/issues/84
+    # disable "Three Finger Salute"
+    sed -i 's/ca\:12345/\#ca\:12345/g' /etc/inittab
 }
 
 f_setup_genkernel() {
@@ -607,6 +610,7 @@ f_install_chroot() {
     f_setup_grub
     f_unpack_securix_config
     f_setup_securix_system
+    f_three_finger_salute_disable
     f_setup_genkernel
     f_setup_portage
     f_setup_gentoo_gpg
