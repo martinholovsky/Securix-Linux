@@ -840,7 +840,7 @@ f_setup_portage() {
     f_download "${SECURIX_PORTAGEFILE}.md5sum" "${GENTOO_PORTAGEFILE}.md5sum"
     f_download "${SECURIX_PORTAGEFILE}.gpgsig" "${GENTOO_PORTAGEFILE}.gpgsig"
     # verify portage GPG
-    gpg --homedir /etc/portage/gpg -u 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910 --verify "${SECURIX_PORTAGEFILE##*/}.gpgsig" "${SECURIX_PORTAGEFILE##*/}"
+    gpg --homedir /etc/portage/gpg --verify "${SECURIX_PORTAGEFILE##*/}.gpgsig" "${SECURIX_PORTAGEFILE##*/}"
     if [ "${?}" -ne "0" ]; then
         f_msg error "Gentoo GPG signature of Portage file do not match !!"
         exit_on_error
