@@ -803,12 +803,30 @@ f_setup_stage3() {
     # and download it
     f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}" "${GENTOO_STAGE3BASEURL}${STAGE3LATESTFILE}"
     statusd="${?}"
-    f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS" "${GENTOO_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS"
     f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc" "${GENTOO_STAGE3BASEURL}${STAGE3LATESTFILE}.DIGESTS.asc"
+
+    # verify stage3 GPG
+    # Example link:
+    #   http://distfiles.gentoo.org/releases/amd64/autobuilds/20150108/hardened/stage3-amd64-hardened-20150108.tar.bz2.DIGESTS.asc
+    # Backup for historic purposes:
+    #   http://www.webcitation.org/6VVeYAc6e
+    # It is a gnupg clearsigned file. Using --verify is inappropriate here.
+    # Because gnupg ignores all text before and after the clearsigned text and
+    # still exit 0. Malicious extraneous text confuse grep below. Therefore
+    # using --verify, which extracts the clearsigned text only.
+    # stdout: clear text that was clearsigned, therefore redirected to temp file.
+    # stderr: gpg status messages (gpg: Signature made etc.)
+    # exit code: non-zero if it cannot be verified, otherwise 0.
+    f_msg info "###-### Step: Verifying Stage3 GPG signature"
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --decrypt "${STAGE3LATESTFILE##*/}.DIGESTS.asc" > "stage3latestfile_clear_text"
+    if [ "${?}" -ne "0" ]; then
+        f_msg error "Gentoo GPG signature of Stage3 file do not match !!"
+        exit_on_error
+    fi
 
     # check SHA512
     STAGE3SUM="$(sha512sum "${STAGE3LATESTFILE##*/}")"
-    grep "${STAGE3SUM}" "${STAGE3LATESTFILE##*/}.DIGESTS.asc" >/dev/null
+    grep "${STAGE3SUM}" "stage3latestfile_clear_text" >/dev/null
     statusc="${?}"
     if [ "${statusd}" -ne "0" -o "${statusc}" -ne "0" ]; then
         f_msg error "ERROR: There was problem with download or checksum of stage3 file. Exit codes: "
@@ -817,15 +835,12 @@ f_setup_stage3() {
     else
         echo "-- SHA512 checksum: OK"
     fi
-
-    # verify stage3 GPG
-    f_msg info "###-### Step: Verifying Stage3 GPG signature"
-    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --verify "${STAGE3LATESTFILE##*/}.DIGESTS.asc"
+    rm -f stage3latestfile_clear_text
 
     f_msg info "###-### Step: Extracting stage ---"
     tar xjpf "${STAGE3LATESTFILE##*/}" --checkpoint=.1000
     echo " DONE"
-    rm -f "${STAGE3LATESTFILE##*/}" "${STAGE3LATESTTXT}" *.DIGESTS *.CONTENTS *.asc
+    rm -f "${STAGE3LATESTFILE##*/}" "${STAGE3LATESTTXT}" *.CONTENTS *.asc
 }
 
 f_setup_portage() {
