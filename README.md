@@ -11,7 +11,7 @@ Check Securix [changelog.txt](https://update.securix.org/changelog/changelog.txt
 **This is pre-alpha release, which should be used by pre-alpha team only!**
 
 **Installation instructions**
-- download copy of Gentoo minimal install CD from [Securix website](https://mirror.securix.org/iso/), which is verified to be functional 
+- download copy of Gentoo minimal install CD from [Securix website](https://mirror.securix.org/iso/), which is verified to be functional
 - boot into install CD (for example in [VirtualBox](https://www.virtualbox.org/)) and execute: `wget https://securix.org/install.sh`
 - then execute: `bash install.sh` and follow instructions
 
@@ -20,8 +20,8 @@ All scripts or hashes are signed by [Securix Code Sign](https://update.securix.o
 **Website**
 [www.securix.org](https://www.securix.org)
 
-**Follow Securix GNU/Linux**
-[Facebook](https://www.facebook.com/SecurixLinux) 
+**Follow Securix GNU/Linux**  
+[Facebook](https://www.facebook.com/SecurixLinux)  
 [Twitter](https://twitter.com/SecurixLinux)
 
 ``
