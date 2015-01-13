@@ -818,7 +818,7 @@ f_setup_stage3() {
     # stderr: gpg status messages (gpg: Signature made etc.)
     # exit code: non-zero if it cannot be verified, otherwise 0.
     f_msg info "###-### Step: Verifying Stage3 GPG signature"
-    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --decrypt "${STAGE3LATESTFILE##*/}.DIGESTS.asc" > "stage3latestfile_clear_text"
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --decrypt "${STAGE3LATESTFILE##*/}.DIGESTS.asc" --output "stage3latestfile_clear_text"
     if [ "${?}" -ne "0" ]; then
         f_msg error "Gentoo GPG signature of Stage3 file do not match !!"
         exit_on_error
