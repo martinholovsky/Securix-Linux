@@ -1,13 +1,13 @@
 Securix BASH coding conventions
 ===============================
 
-First of all I really appreciate any contribute to Securix via Github, but because all of us have slightly different conventions when coding in bash, please follow this template/guide.
-In that case code will stay clear and readable after years
+First of all I really appreciate any contribution to Securix via Github, but because all of us have slightly different conventions when coding in BASH, please follow this guide.  
+In that case code will stay clear and well readable even after years.
 
-Make secure (beware of sprint attack), well readable (follow convention) code with focus on performance (use time command)
+Make secure, well readable code, with focus on performance.
 
 
-### Bash template
+## Bash script template
 Bash scripts should contain this header
 ```bash
 #!/bin/bash
@@ -33,70 +33,107 @@ Bash scripts should contain this header
 #
 ```
 
-One of the often used function is `f_msg` which colorize message based on its severity (info, warn, error), $1 is level $2 is text
-Cron scripts shouldn't use f_msg because output is forwarded to log and not to screen
+## Error Trap
+Where possible please use error trap at the beginning of script.
+
+```bash
+# end script in case of error
+# exception: if statement, until and while loop, logical AND (&&) or OR (||)
+# trap also those exit signals: 1/HUP, 2/INT, 3/QUIT, 15/TERM, ERR
+
+trap exit_on_error 1 2 3 15 ERR
+
+exit_on_error() {
+  local exit_status="${1:-$?}"
+  echo -e "${txtred}»»» Exiting ${0} with status: ${exit_status} ${txtdefault}"
+  exit "${exit_status}"
+}
+```
+
+You can also source error trap from `/usr/sbin/securix-functions` definition.
+
+
+## Overview
+- use 4 spaces Tab length
+- One of the often used function is `f_msg` which colorize message based on its severity (info, warn, error), `$1` is level `$2` is text.
+- Cron scripts shouldn't use `f_msg` because output is forwarded to log and not to screen
 example: `f_msg error "Cant find XXX"` - will print "Cant find XXX" in red color
+- Shared functions are defined in file `/usr/sbin/securix-functions`. Please be familiar with them so you don’t need to reinvent-the-wheel
 
-Shared functions are defined in file /usr/sbin/securix-functions be familiar with them so you don’t need to reinvent-the-wheel
+Always properly test your code in all possible situations (does file/directory exist? what if variable is empty? ...) before contributing.
 
-Always test your code in all possible situations (does file/directory exist? what if variable is empty? ...) before contributing.
+## Variables
+- A variable name must be any sequence of characters not containing `:`, `#`, `=`, `-`, `%` or leading or trailing whitespace  
+- Use only letters, numbers and underscores to avoid further issues  
+- Variable names are case-sensitive
+- Variable names "should" be lower-case (to avoid conflict with internal bash variables), but for readability we are not following that
 
-### Variables
-A variable name may be any sequence of characters not containing ":", "#", "=", "-", "%" or leading or trailing whitespace. Use only letters, numbers, and underscores to avoid further issues.
-Variable names are case-sensitive.
-
-Variables defined in /etc/securix/securix.conf starts with SX_* (SX_VARIABLE)
+Variables defined in `/etc/securix/securix.conf` starts with `SX_*` (SX_VARIABLE)
 
 Text variable must be enclosed in double-quotation mark, even if it is one word
+```bash
 VARIABLE="string"
-
+```
 Same for integer value
+```bash
 VARIABLE="123"
+```
 
 Same for execution (even for variable inside)
+```bash
 VARIABLE="$(echo "${MAILHOST}" | cut -d' ' -f3)"
+```
 
-Variable (string/integer) used inside quotation mark must be always enclosed in curly braces
+Variable used inside quotation mark must be always enclosed by curly braces
+```bash
 echo "My name is ${USERNAME}"
+```
 
-When you're executing command inside script do not use backquote (``), but brackets
+When you're executing command inside script, do not use backquote `(``)`, but brackets
+```bash
 VAR="$(echo "${OUTPUT}" | awk '{ print $2 }')"
+```
 or
+```bash
 echo "$(date)" >> "${SECURIXLOG}"
+```
 
 **Every reference** to variable should be enclosed by double-quotation mark and curly braces
-Just in few cases where it may have reason due to internal field separator (for loops, arguments, ..), variable don't needs to be enclosed by double-quotation marks
 
+```bash
 if [ "${VARIABLE}" -eq "0" ]; then
     echo "OK"
 fi
+```
 
 **Just in this form the variable definition is unambiguous**
 
-Main reasons:
-- variable could contain internal field separator and test will fail (e.g. VARIABLE="aaa bbb").
-- in case of variable or parameter expansion, case modification or work with fields you need to use curly braces anyway, so it's better to have convention everywhere the same
-e.g. "${VARIABLE}/foobar", "${VARAIBLE##*/}", "${VARIABLE^^}", "${VARIABLE[0]}"
+**Main reasons to follow this**
+- variable could contain internal field separator and test will fail (e.g. `VARIABLE="aaa bbb"`).
+- in case of variable or parameter expansion, case modification or work with fields and arrays you need to use curly braces anyway, so it's better to have convention everywhere the same  
+e.g. `${VARIABLE}/foobar`, `${VARAIBLE##*/}`, `${VARIABLE^^}", "${VARIABLE[0]}`
 
-### Arithmetic operations
-# One of the few exemptions, where for the readibility you don't need to use curly braces
+The only exception when you don't need to follow this is when it is expected that variable contain multiple values for program arguments, for loops, etc.
+
+
+## Arithmetic operations
+For the readability you don't need to use curly braces
+```bash
 SIZE="$((PARTITION + 1000))"
-or
+#or
 echo "$((a = 2 , b = 2 + a , a * b))"
-or
+#or
 ((count++))
-or
+#or
 fill="$((((columns - colnumber) * chars) - 1))"
+```
+## IF statements
+- Follow newlines, tabs and spaces
+- All string variables should be enclosed in double-quotation marks
+- A newline is used after "then" and after "else"
+- Compare integer values using one of `-eq, -ne, -lt, -le, -gt, -ge` meaning equal, not equal, less than, less than or equal, greater than, and greater than or equal.
 
-### IF
-Here you have basic examples of test
-Especially follow newlines, tabs and spaces.
-All string variables should be enclosed in double-quotation marks
-A newline is used after "then" and after "else"
-BASH if statements: http://www.linuxtutorialblog.com/post/tutorial-conditions-in-bash-scripting-if-statements
-
-# Compare integer values using one of "-eq, -ne, -lt, -le, -gt, -ge" meaning equal, not equal, less than, less than or equal, greater than, and greater than or equal.
-
+```bash
 if [ "${EUID}" -ne "0" ]; then
     f_msg error "This script must be run as root or via sudo"
     exit_on_error
@@ -124,16 +161,22 @@ fi
 if [[ "${VARIABLE}" = "*Available*" ]]; then
     f_msg info "Variable start with \"A\""
 fi
+```
 
-### Loops
+More information: [BASH if statements](http://www.linuxtutorialblog.com/post/tutorial-conditions-in-bash-scripting-if-statements)
+
+## Loops
+```bash
 for arguments in "${@}"; do
     echo "${arguments}"
 done
+```
+## Shell functions
+Name of function start with `f_*` so anyone can recognize it quickly.
 
-### Shell functions
-Name of function start with f_* so anyone can recognize it quickly
 Again please follow newlines, spaces, tabs, etc. convention
 
+```bash
 f_updatesecurix() {
     f_msg info "###-### Checking update of Securix scripts ---"
     f_download "${SECURIXUPDATE}/current"
@@ -144,10 +187,13 @@ f_updatesecurix() {
         f_msg info "--- New update available!"
     fi
 }
+```
 
-### Case statement
+## Case statement
 We use mainly two forms
+
 First one is optimized for readability
+```bash
 case "${HOSTTYPE}" in
     x86_64)
         ARCH="amd64"
@@ -160,55 +206,53 @@ case "${HOSTTYPE}" in
     	exit 1
     	;;
 esac
+```
 
 And short-form mainly used in shared functions
+```bash
 case "${answer}" in
     y|Y|yes|YES|Yes) yesno="yes" ;;
     *) yesno="no" ;;
 esac
-
-### External commands
+```
+## External commands
 Try to avoid usage of external commands where it is not necessary (grep, awk, cut, cat, sed, ...).
 Usally it is much faster to use built-in function, than executing external commands, especially if operation is performed upon variable (not file).
 
 
-Examples:
-We dont need to use "VARIABLE=$(cat /path/to/file)" when we want to set variable from file. Instead of this we can source file to variable directly.
-VARIABLE=$(</path/to/file)
+Examples:  
+We don't need to use `VARIABLE=$(cat /path/to/file)` when we want to set variable from file. Instead of this we can source file to variable directly.  
+```bash
+VARIABLE="$(</path/to/file)"
+```
 
-We would like to get lenght of longest line in one file via "wc -L $file", but it will produce output in format "$number $file"
+When we would like to get length of longest line in one file via `wc -L $file`, but it will produce output in format `$number $file`  
 Usually we will use something like this:
-wc -L $file | awk '{ print $1 }'
-
-Don't use ``ls | grep``
-KERNEL="$(ls /usr/src/ | grep hardened)"
-use glob (or for loop) instead
-KERNEL="/usr/src/*hardened*"
+```bash
+wc -L "${file}" | awk '{ print $1 }'
+```
 
 But we can use parameter expansion to split value from filename.
-LONGLINE=$(wc -L $file)
-LONGLINE=${LONGLINE%% *} # longest match of the pattern " *" from the end of the string
+```bash
+LONGLINE=$(wc -L "${file}")
+LONGLINE="${LONGLINE%% *}" # longest match of the pattern " *" from the end of the string
+```
 
-Next example:
-We would like to split path from file name, but without commands like basename, dirname
-FILE="/aaa/bbb/ccc.tgz"
+If it will work for you, don't use `ls | grep`  
+```bash
+KERNEL="$(ls /usr/src/ | grep hardened)"
+```
+if you can, use globing (or for loop) instead
+```bash
+KERNEL="/usr/src/*hardened*"
+```
 
-FILEPATH=${FILE%/*} # will produce /aaa/bbb
-FILENAME=${FILE##*/} # will produce ccc.tgz
-FILEEXTENSION=${FILE##*.} # will produce tgz
+## Parameter expansion
 
-# Case modification example
-The "^" operator modifies the first character to uppercase, the "," operator to lowercase. When using the double-form (^^ and ,,) all characters are converted.
-The (currently undocumented) operators "~" and "~~" reverse the case of the given text.
+In most cases you don't need to even call `sed` command externally.  
+Search and replace example:
 
-MYVAR="aaBBcc"
-
-echo "${MYVAR^}"  # AaBBcc
-echo "${MYVAR^^}" # AABBCC
-echo "${MYVAR,,}" # aabbcc
-echo "${MYVAR~~}" # AAbbCC
-
-# Search and replace example (instead of usign SED)
+```bash
 MYVAR="abc 123 abc 456"
 
 # one slash is to only substitute the first occurrence
@@ -216,8 +260,38 @@ echo "${MYVAR/abc/klm}" # will produce: klm 123 abc 456
 
 # two slashes is to substitute all occurrences
 echo "${MYVAR//abc/klm}" # will produce: klm 123 klm 456
+```
 
-To understand it well, please read this: http://wiki.bash-hackers.org/syntax/pe
+When we would like to split path from file name, but without commands like `basename` or `dirname`  
+```bash
+FILE="/aaa/bbb/ccc.tgz"
+FILEPATH="${FILE%/*}" # will produce /aaa/bbb
+FILENAME="${FILE##*/}" # will produce ccc.tgz
+FILEEXTENSION="${FILE##*.}" # will produce tgz
+```
 
-Other information please find on this great page
-http://wiki.bash-hackers.org
+### Case modification
+- `^` operator modifies the first character to uppercase
+- `,` operator to lowercase
+- double-form (`^^` and `,,`) convert all characters.
+- (currently undocumented) operators `~` and `~~` reverse the case of given text
+
+```bash
+MYVAR="aaBBcc"
+echo "${MYVAR^}"  # AaBBcc
+echo "${MYVAR^^}" # AABBCC
+echo "${MYVAR,,}" # aabbcc
+echo "${MYVAR~~}" # AAbbCC
+```
+
+More information here [http://wiki.bash-hackers.org/syntax/pe](http://wiki.bash-hackers.org/syntax/pe)
+
+## this is the end...
+
+To explore more, please read great site [wiki.bash-hackers.org](http://wiki.bash-hackers.org)  
+For syntax check and code analysis use [ShellCheck website](http://www.shellcheck.net/)  
+
+...and here are few code editors which we can recommend  
+[Atom #atom.io](https://atom.io/)  
+[Lime Text #limetext.org](http://limetext.org/)  
+[Komodo Edit #komodoide.com](http://komodoide.com/komodo-edit/)
