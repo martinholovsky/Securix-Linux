@@ -70,7 +70,7 @@ Always properly test your code in all possible situations (does file/directory e
 
 Variables defined in `/etc/securix/securix.conf` starts with `SX_*` (SX_VARIABLE)
 
-Text variable must be enclosed in double-quotation mark, even if it is one word
+String variable must be enclosed in double-quotation mark, even if it is one word
 ```bash
 VARIABLE="string"
 ```
