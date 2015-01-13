@@ -55,8 +55,8 @@ You can also source error trap from `/usr/sbin/securix-functions` definition.
 
 ## Overview
 - use 4 spaces Tab length
-- One of the often used function is `f_msg` which colorize message based on its severity (info, warn, error), `$1` is level `$2` is text.
-- Cron scripts shouldn't use `f_msg` because output is forwarded to log and not to screen
+- One of the often used function is `f_msg` which colorize message based on its severity (info, warn, error), `$1` is level `$2` is text
+- Cron scripts shouldn't use `f_msg` because output is forwarded to log and not to screen  
 example: `f_msg error "Cant find XXX"` - will print "Cant find XXX" in red color
 - Shared functions are defined in file `/usr/sbin/securix-functions`. Please be familiar with them so you don’t need to reinvent-the-wheel
 
@@ -89,7 +89,7 @@ Variable used inside quotation mark must be always enclosed by curly braces
 echo "My name is ${USERNAME}"
 ```
 
-When you're executing command inside script, do not use backquote `(``)`, but brackets
+When you're executing command inside script, do not use backquotes, but brackets
 ```bash
 VAR="$(echo "${OUTPUT}" | awk '{ print $2 }')"
 ```
@@ -111,9 +111,9 @@ fi
 **Main reasons to follow this**
 - variable could contain internal field separator and test will fail (e.g. `VARIABLE="aaa bbb"`).
 - in case of variable or parameter expansion, case modification or work with fields and arrays you need to use curly braces anyway, so it's better to have convention everywhere the same  
-e.g. `${VARIABLE}/foobar`, `${VARAIBLE##*/}`, `${VARIABLE^^}", "${VARIABLE[0]}`
+e.g. `${VARIABLE}/foobar`, `${VARAIBLE##*/}`, `${VARIABLE^^}`, `${VARIABLE[0]}`
 
-The only exception when you don't need to follow this is when it is expected that variable contain multiple values for program arguments, for loops, etc.
+The only exception when you don't need to follow this is when it is expected that variable contain multiple values used as arguments, in `for` loops, etc.
 
 
 ## Arithmetic operations
@@ -129,8 +129,8 @@ fill="$((((columns - colnumber) * chars) - 1))"
 ```
 ## IF statements
 - Follow newlines, tabs and spaces
-- All string variables should be enclosed in double-quotation marks
-- A newline is used after "then" and after "else"
+- All variables must be enclosed in double-quotation marks
+- A newline is used after `then` and after `else`
 - Compare integer values using one of `-eq, -ne, -lt, -le, -gt, -ge` meaning equal, not equal, less than, less than or equal, greater than, and greater than or equal.
 
 ```bash
@@ -172,7 +172,7 @@ for arguments in "${@}"; do
 done
 ```
 ## Shell functions
-Name of function start with `f_*` so anyone can recognize it quickly.
+Name of function must start with `f_*` so anyone can recognize it quickly.
 
 Again please follow newlines, spaces, tabs, etc. convention
 
@@ -220,27 +220,28 @@ Try to avoid usage of external commands where it is not necessary (grep, awk, cu
 Usally it is much faster to use built-in function, than executing external commands, especially if operation is performed upon variable (not file).
 
 
-Examples:  
-We don't need to use `VARIABLE=$(cat /path/to/file)` when we want to set variable from file. Instead of this we can source file to variable directly.  
+We don't need to use `VARIABLE="$(cat /path/to/file)"` when we want to set variable from file. Instead of this we can source file to variable directly.  
 ```bash
 VARIABLE="$(</path/to/file)"
 ```
 
 When we would like to get length of longest line in one file via `wc -L $file`, but it will produce output in format `$number $file`  
-Usually we will use something like this:
+
+Usually we will do something like this:
 ```bash
-wc -L "${file}" | awk '{ print $1 }'
+wc -L "${file}" | awk '{ print $1 }' #bad example
 ```
 
-But we can use parameter expansion to split value from filename.
+But we can use parameter expansion to split value from filename
 ```bash
-LONGLINE=$(wc -L "${file}")
-LONGLINE="${LONGLINE%% *}" # longest match of the pattern " *" from the end of the string
+LONGLINE="$(wc -L "${file}")"
+# longest match of the pattern " *" from the end of the string
+LONGLINE="${LONGLINE%% *}"
 ```
 
 If it will work for you, don't use `ls | grep`  
 ```bash
-KERNEL="$(ls /usr/src/ | grep hardened)"
+KERNEL="$(ls /usr/src/ | grep hardened)" #bad example
 ```
 if you can, use globing (or for loop) instead
 ```bash
@@ -270,7 +271,7 @@ FILENAME="${FILE##*/}" # will produce ccc.tgz
 FILEEXTENSION="${FILE##*.}" # will produce tgz
 ```
 
-### Case modification
+**Case modification**
 - `^` operator modifies the first character to uppercase
 - `,` operator to lowercase
 - double-form (`^^` and `,,`) convert all characters.
@@ -291,7 +292,7 @@ More information here [http://wiki.bash-hackers.org/syntax/pe](http://wiki.bash-
 To explore more, please read great site [wiki.bash-hackers.org](http://wiki.bash-hackers.org)  
 For syntax check and code analysis use [ShellCheck website](http://www.shellcheck.net/)  
 
-...and here are few code editors which we can recommend  
+...and here are few code editors which we can recommend (open-source)  
 [Atom #atom.io](https://atom.io/)  
 [Lime Text #limetext.org](http://limetext.org/)  
 [Komodo Edit #komodoide.com](http://komodoide.com/komodo-edit/)
