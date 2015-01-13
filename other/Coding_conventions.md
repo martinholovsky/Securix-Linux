@@ -1,13 +1,15 @@
-=== Securix bash coding conventions
+Securix BASH coding conventions
+===============================
 
 First of all I really appreciate any contribute to Securix via Github, but because all of us have slightly different conventions when coding in bash, please follow this template/guide.
 In that case code will stay clear and readable after years
 
 Make secure (beware of sprint attack), well readable (follow convention) code with focus on performance (use time command)
 
+
 ### Bash template
 Bash scripts should contain this header
-
+```bash
 #!/bin/bash
 
 #: title: Script title
@@ -29,11 +31,11 @@ Bash scripts should contain this header
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+```
 
-
-One of the often used function is "f_msg" which colorize message based on its severity (info, warn, error), $1 is level $2 is text
+One of the often used function is `f_msg` which colorize message based on its severity (info, warn, error), $1 is level $2 is text
 Cron scripts shouldn't use f_msg because output is forwarded to log and not to screen
-example: f_msg error "Cant find XXX" - will print "Cant find XXX" in red color
+example: `f_msg error "Cant find XXX"` - will print "Cant find XXX" in red color
 
 Shared functions are defined in file /usr/sbin/securix-functions be familiar with them so you don’t need to reinvent-the-wheel
 
