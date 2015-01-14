@@ -33,7 +33,7 @@
 ##############################################################################
 
 # load securix functions
-if [ ! -r /usr/sbin/securix-functions ]; then
+if [ ! -r "/usr/sbin/securix-functions" ]; then
     echo "--- PROBLEM: /usr/sbin/securix-functions doesnt exist!!"
     logger "CRITICAL: /usr/sbin/securix-functions doesnt exist!!"
     exit 1
@@ -51,23 +51,23 @@ f_loadsecurixconf
 ##############################################################################
 
 # check permissions
-if [ $EUID -ne 0 ]; then
+if [ "${EUID}" -ne "0" ]; then
     f_msg error "This script must be run as root or via sudo"
     exit 1
 fi
 
 # lockfile
-if [ -f $LOCKFILE ]; then
+if [ -f "${LOCKFILE}" ]; then
     f_msg error "It seems that there is already running this script... exiting"
     f_msg info "If you're sure what you're doing, you can execute: rm -f ${LOCKFILE}"
     exit 1
 else
-    touch $LOCKFILE
+    touch "${LOCKFILE}"
 fi
 
 # change context
 f_mktemp
-cd ${TEMPDIR}
+cd "${TEMPDIR}"
 
 ##############################################################################
 #
@@ -94,18 +94,18 @@ f_updatekernel() {
     f_updatepackage genkernel
     f_msg info "###-### Updating hardened-sources ---"
     f_updatepackage hardened-sources
-    if [ $? -eq 1 ]; then
+    if [ "${?}" -eq "1" ]; then
         mount /boot
         grep "$(uname -r)" /boot/grub/grub.conf
-        if [ $? -eq 1 ]; then    
+        if [ "${?}" -eq "1" ]; then
             f_msg info "--- Nothing to do. You're already using latest kernel"
         fi
     fi
     f_msg info "###-### This kernel will be compiled ---"
-    KERNELVERSION=$(eselect kernel list | grep '*' | awk '{ print $2 }')
+    KERNELVERSION="$(eselect kernel list | grep '*' | awk '{ print $2 }')"
     f_msg info "--- ${KERNELVERSION}"
     f_getvar "Where is kernel configuration? [default: /usr/src/${KERNELVERSION}/.config]: " KERNELCONFIG "/usr/src/${KERNELVERSION}/.config"
-    if [ ! -r "$KERNELCONFIG" ]; then
+    if [ ! -r "${KERNELCONFIG}" ]; then
         f_msg error "--- Configuration file not found"
         exit 1
     fi
@@ -121,25 +121,25 @@ f_updatesecurix() {
 }
 
 f_updateconfig() {
-    if [ -z "$3" ]; then
+    if [ -z "${3}" ]; then
         f_msg warn "--- You must specify which config file should be downloaded. For example: /etc/sysctl.conf"
     fi
     f_msg info "###-### Contacting Securix config server to find ${3} ---"
-    f_download ${SECURIXUPDATE}/config/sha512.hash
-    numlines=$(grep "${3}" sha512.hash | wc -l)
-    
-    if [ $numlines -eq 1 ]; then
-        f_download ${SECURIXUPDATE}$(grep "${3}" sha512.hash | cut -d' ' -f3)
-        if [ $? -eq 0 ]; then
-            downloaded = "yes"
+    f_download "${SECURIXUPDATE}/config/sha512.hash"
+    numlines="$(grep -c "${3}" sha512.hash)"
+
+    if [ "${numlines}" -eq "1" ]; then
+        f_download "${SECURIXUPDATE}$(grep "${3}" sha512.hash | cut -d' ' -f3)"
+        if [ "${?}" -eq "0" ]; then
+            downloaded="yes"
         fi
-    elif [ $numlines -gt 1 ]; then
+    elif [ "${numlines}" -gt "1" ]; then
         f_msg error "--- Your search return more than one file. Please better specify file name."
-        elif [ $numlines -lt 1 ]; then
-            f_msg error "--- Nothing found. Please better specify file name."
+    elif [ "${numlines}" -lt "1" ]; then
+        f_msg error "--- Nothing found. Please better specify file name."
     fi
-    
-    if [ "$downloaded" = "yes" ]; then
+
+    if [ "${downloaded}" = "yes" ]; then
         f_msg info "--- Successfully downloaded ${3} to actual directory. You can use it as template or rewrite current."
     else
         f_msg error "--- Configuration file ${3} not found on server"
@@ -149,16 +149,16 @@ f_updateconfig() {
 
 # Second level functions
 f_update() {
-    case "$2" in
-        system|syste|syst|sys|sy) f_updatesystem "$@"
+    case "${2}" in
+        system|syste|syst|sys|sy) f_updatesystem "${@}"
             ;;
-        kernel|kerne|kern|ker|ke|k) f_updatekernel "$@"
+        kernel|kerne|kern|ker|ke|k) f_updatekernel "${@}"
             ;;
-        securix|securi|secur|secu|sec|se) f_updatesecurix "$@"
+        securix|securi|secur|secu|sec|se) f_updatesecurix "${@}"
             ;;
         all|al|a) f_updatesecurix && f_updatesystem && f_updatekernel
             ;;
-        config|confi|conf|con|co|c) f_updateconfig "$@"
+        config|confi|conf|con|co|c) f_updateconfig "${@}"
             ;;
         *)
             echo "securix update [option]"
@@ -168,11 +168,11 @@ f_update() {
             echo "securix - update securix scripts"
             echo "config - update one of the system file to current version"
             echo "all - update all above"
-            rm -f $LOCKFILE
+            rm -f "${LOCKFILE}"
             exit
             ;;
-        
-    esac    
+
+    esac
 }
 
 ##############################################################################
@@ -184,62 +184,62 @@ f_update() {
 
 f_patchcheck() {
     f_msg info "###-### Checking for Securix patch ---"
-    f_download ${SECURIXUPDATE}${SECURIXVERSION}/patch
-    if [ $? -ne 0 ]; then
+    f_download "${SECURIXUPDATE}${SECURIXVERSION}/patch"
+    if [ "${?}" -ne "0" ]; then
         f_msg info "--- No patch available for this version"
-        exit
+        exit_on_error
     fi
-    LASTPATCHSUM=$(md5sum patch | awk '{ print $1 }')
-    if [ "$PATCHSUM" = "$LASTPATCHSUM" ]; then
+    LASTPATCHSUM="$(md5sum patch | awk '{ print $1 }')"
+    if [ "${PATCHSUM}" = "${LASTPATCHSUM}" ]; then
         f_msg info "--- You have actual patch version"
-        exit
+        exit_on_error
     fi
-    f_download ${SECURIXUPDATE}${SECURIXVERSION}/patch.sign
+    f_download "${SECURIXUPDATE}${SECURIXVERSION}/patch.sign"
     gpg --homedir /etc/portage/gpg --verify patch.sign patch
-    if [ $? -ne 0 ]; then
+    if [ "${?}" -ne "0" ]; then
         f_msg error "--- Problem with signed package! Possible security incident or network issue"
         exit_on_error
     fi
-    
+
     f_msg info "###-### Executing Securix patch ---"
     f_yesno "--- Do you want to see content of this patch?" SEEPATCH
-    if [ "$SEEPATCH" = "yes" ]; then
+    if [ "${SEEPATCH}" = "yes" ]; then
         more patch
         f_yesno "--- Are you OK with that?" EXECPATCH
-        if [ "$EXECPATCH" = "no" ]; then
+        if [ "${EXECPATCH}" = "no" ]; then
             f_msg info "--- Patch is not executed"
-            exit
+            exit_on_error
         fi
     else
         chmod u+x patch
         bash patch
         f_msg info "--- Patch implemented"
-        logger "$0 - applied patch to Securix version ${SECURIXVERSION} with md5sum ${LASTPATCHSUM}"
-        sed -i 's/^PATCHSUM\=.*/PATCHSUM\=\"'${LASTPATCHSUM}'\"/g' $0
+        logger "${0} - applied patch to Securix version ${SECURIXVERSION} with md5sum ${LASTPATCHSUM}"
+        sed -i 's/^PATCHSUM\=.*/PATCHSUM\=\"'${LASTPATCHSUM}'\"/g' "${0}"
     fi
 }
 
 f_patchfile() {
-    if [ ! -f "$3" ]; then
+    if [ ! -f "${3}" ]; then
         f_msg warn "--- File not found!"
         f_msg info "Example: securix patch file /root/patch.sh"
-        exit
+        exit_on_error
     else
         f_msg info "###-### Executing patch ---"
-            FILEPATCHSUM=$(md5sum "$3" | awk '{ print $1 }')
-            chmod u+x "$3"
-            bash "$3"
+            FILEPATCHSUM="$(md5sum "$3" | awk '{ print $1 }')"
+            chmod u+x "${3}"
+            bash "${3}"
             f_msg info "--- Patch implemented"
-            logger "$0 - applied file patch to Securix version ${SECURIXVERSION} with md5sum ${FILEPATCHSUM}"
-            sed -i 's/^PATCHSUM\=.*/PATCHSUM\=\"'${FILEPATCHSUM}'\"/g' $0
+            logger "${0} - applied file patch to Securix version ${SECURIXVERSION} with md5sum ${FILEPATCHSUM}"
+            sed -i 's/^PATCHSUM\=.*/PATCHSUM\=\"'${FILEPATCHSUM}'\"/g' "${0}"
     fi
 }
 
 f_patch() {
-    case "$2" in
-        check|chec|che|ch) f_patchcheck "$@"
+    case "${2}" in
+        check|chec|che|ch) f_patchcheck "${@}"
             ;;
-        file|fil|fi|f) f_patchfile "$@"
+        file|fil|fi|f) f_patchfile "${@}"
             ;;
         *)
             echo "securix patch [option]"
@@ -248,7 +248,7 @@ f_patch() {
             echo "file [path] - use local file to apply patch"
             echo ""
             echo "Patch is usually bash script which will be executed"
-            rm -f $LOCKFILE
+            rm -f "${LOCKFILE}"
             exit
             ;;
     esac
@@ -261,7 +261,7 @@ f_patch() {
 ##############################################################################
 
 f_configbackup() {
-    
+
     echo "--- Not implemented XXXXXXXX"
 }
 
@@ -269,16 +269,16 @@ f_configbonding() {
     f_msg info "Your current network setup:"
     cat /etc/conf.d/net
     f_msg newline
-    interfaces=$(ifconfig -a | grep -c eth)
-    if [ $interfaces -ne 1 ]; then
+    interfaces="$(ifconfig -a | grep -c eth)"
+    if [ "${interfaces}" -ne "1" ]; then
         f_yesno "Multiple ethernets found. Do you want setup bonding?" BONDING
     fi
 
-    if [ -z "$BONDING" -o "$BONDING" = "no" ]; then
+    if [ -z "${BONDING}" -o "${BONDING}" = "no" ]; then
         BONDING="no"
         f_yesno "Do you want setup networking manually? [NO is DHCP]" NETMANUAL
 
-        if [ "$NETMANUAL" = "no" ]; then
+        if [ "${NETMANUAL}" = "no" ]; then
             # dhcp
             f_getvar "Specify interface [default: eth0]: " NETETH "eth0"
             USEDHCP="yes"
@@ -296,15 +296,15 @@ f_configbonding() {
             f_getvar "Specify primary DNS server [8.8.8.8]: " NETDNS "8.8.8.8"
             f_getvar "Specify secondary DNS server [8.8.4.4]: " NETDNS2 "8.8.4.4"
             f_getvar "Specify domain name [securix.local]: " NETDOMAIN "securix.local"
-            f_getvar "Specify primary NTP server [0.gentoo.pool.ntp.org]" NETNTP "0.gentoo.pool.ntp.org"
-            f_getvar "Specify secondary NTP server [1.gentoo.pool.ntp.org]" NETNTP2 "1.gentoo.pool.ntp.org"
+            f_getvar "Specify primary NTP server [0.gentoo.pool.ntp.org]: " NETNTP "0.gentoo.pool.ntp.org"
+            f_getvar "Specify secondary NTP server [1.gentoo.pool.ntp.org]: " NETNTP2 "1.gentoo.pool.ntp.org"
         fi
     fi
 
     # bonding
-    if [ "$BONDING" = "yes" ]; then
+    if [ "${BONDING}" = "yes" ]; then
         f_yesno "Do you want use defaults (DHCP on bond0, slaves eth0+eth1, mode active-backup)?" USEDHCP
-        if [ "$USEDHCP" = "no" ]; then
+        if [ "${USEDHCP}" = "no" ]; then
             f_msg info "Current ifconfig:"
             ifconfig | grep -B 1 inet | grep -vE '127.0.0.1|Loopback'
             f_msg info "Routing:"
@@ -321,17 +321,17 @@ f_configbonding() {
             f_getvar "Specify DNS server [8.8.8.8]: " NETDNS "8.8.8.8"
             f_getvar "Specify secondary DNS server [8.8.4.4]: " NETDNS2 "8.8.4.4"
             f_getvar "Specify domain name [securix.local]: " NETDOMAIN "securix.local"
-            f_getvar "Specify primary NTP server [0.gentoo.pool.ntp.org]" NETNTP "0.gentoo.pool.ntp.org"
-            f_getvar "Specify secondary NTP server [1.gentoo.pool.ntp.org]" NETNTP2 "1.gentoo.pool.ntp.org"
+            f_getvar "Specify primary NTP server [0.gentoo.pool.ntp.org]: " NETNTP "0.gentoo.pool.ntp.org"
+            f_getvar "Specify secondary NTP server [1.gentoo.pool.ntp.org]: " NETNTP2 "1.gentoo.pool.ntp.org"
         fi
-        if [ "$USEDHCP" = "yes" ]; then
+        if [ "${USEDHCP}" = "yes" ]; then
             cat > /etc/conf.d/net << EOF
 config_${NETETH}="dhcp"
 EOF
         else
             cat > /etc/conf.d/net << EOF
-config_${NETETH}="$NETIP netmask $NETMASK"
-routes_${NETETH}="default via $NETGATEWAY"
+config_${NETETH}="${NETIP} netmask ${NETMASK}"
+routes_${NETETH}="default via ${NETGATEWAY}"
 EOF
 grep -vE '^server' /etc/ntpd.conf > /etc/ntpd.conf.mv
 mv /etc/ntpd.conf.mv /etc/ntpd.conf
@@ -339,9 +339,9 @@ echo "server ${NETNTP}" >> /etc/ntpd.conf
 echo "server ${NETNTP2}" >> /etc/ntpd.conf
         fi
     fi
-    if [ "$BONDING" = "yes" ]; then
+    if [ "${BONDING}" = "yes" ]; then
 
-        if [ "$USEDHCP" = "yes" ]; then
+        if [ "${USEDHCP}" = "yes" ]; then
             cat >> /etc/conf.d/net << !EOF
 config_eth0="null"
 config_eth1="null"
@@ -351,15 +351,15 @@ miimon_bond0="100"
 config_bond0="dhcp"
 !EOF
         else
-            for slave in $BONDINGSLAVE; do
+            for slave in ${BONDINGSLAVE}; do
                 echo "config_${slave}=\"null\"" >> /etc/conf.d/net
             done
             cat >> /etc/conf.d/net << !EOF
 slaves_${NETETH}="${BONDINGSLAVE}"
 mode_${NETETH}="${BONDINGMODE}"
 miimon_${NETETH}="100"
-config_${NETETH}="$NETIP netmask $NETMASK"
-routes_${NETETH}="default gw $NETGATEWAY"
+config_${NETETH}="${NETIP} netmask ${NETMASK}"
+routes_${NETETH}="default gw ${NETGATEWAY}"
 !EOF
 grep -vE '^server' /etc/ntpd.conf > /etc/ntpd.conf.mv
 mv /etc/ntpd.conf.mv /etc/ntpd.conf
@@ -367,86 +367,87 @@ echo "server ${NETNTP}" >> /etc/ntpd.conf
 echo "server ${NETNTP2}" >> /etc/ntpd.conf
         fi
     fi
-    
+
     # Fail2Ban - update with new IP
-    if [ ! -z "$NETIP" ]; then
+    if [ ! -z "${NETIP}" ]; then
         sed -i "/ignoreip =/ c ignoreip = 127.0.0.1/8 \"${NETIP}\"" /etc/fail2ban/jail.local
         f_msg info "-- fail2ban ignoreip has been updated"
     fi
 
     # restart networking
-    rc-update add net.${NETETH} default
+    rc-update add net."${NETETH}" default
     /etc/init.d/network restart
 }
 
 f_configfirewall() {
-    
+
     echo "--- Not implemented XXXXXXXX"
 }
 
 f_configgrub() {
-    
+
     f_msg info "--- Changing grub password"
     f_getvar "New password [default securix_boot]: " GRUBPASS
     mount /boot
-    GRUBMD5=`grub-md5-crypt << EOF 2>/dev/null | grep -v assword
+    GRUBMD5="$(grub-md5-crypt << EOF 2>/dev/null | grep -v assword
 ${GRUBPASS}
 ${GRUBPASS}
-EOF`
+EOF
+)"
     sed -i "/^password --md5/ c password --md5 ${GRUBMD5}" /boot/grub/grub.conf
 }
 
 f_configgrsec() {
-    
+
     echo "--- Not implemented XXXXXXXX"
 }
 
 f_configluks() {
-    
+
     f_getvar "--- Please specify encrypted device [default /dev/sda3]: " LUKSDEVICE "/dev/sda3"
-    cryptsetup isLuks $LUKSDEVICE
-    if [ $? -ne 0 ]; then
+    cryptsetup isLuks "${LUKSDEVICE}"
+    if [ "${?}" -ne "0" ]; then
         f_msg error "--- This is not LUKS device"
-        exit
+        exit_on_error
     fi
-    cryptsetup luksChangeKey $LUKSDEVICE
+    cryptsetup luksChangeKey "${LUKSDEVICE}"
     f_msg info "--- LUKS password has been changed"
 }
 
 f_configlvm() {
-    
+
     f_msg info "--- You can reallocate actual free space to logical volumes:"
     vgdisplay | grep -E 'Free|Name|---'
     f_msg info "--- Current volumes:"
     df -kh | grep -E 'Filesystem|vg'
     f_getvar "Which volume you want increase? (use full path)" LVMVOLUME
-    lvdisplay $LVMVOLUME >/dev/null
-    if [ $? -ne 0 ]; then
+    lvdisplay "${LVMVOLUME}" >/dev/null
+    if [ "${?}" -ne "0" ]; then
         f_msg error "--- This is not logical volume"
-        exit
+        exit_on_error
     fi
     f_getvar "How much? (example: +1GB, +100%FREE, etc)" LVMRESIZE
-    echo $LVMRESIZE | grep '%' >/dev/null
-    if [ $? -eq 0 ]; then
+    echo "${LVMRESIZE}" | grep '%' >/dev/null
+    if [ "${?}" -eq "0" ]; then
         LVMOPTION="-l"
     else
         LVMOPTION="-L"
     fi
-    lvresize $LVMOPTION $LVMRESIZE $LVMVOLUME
-    resize2fs -p $LVMVOLUME
+    lvresize "${LVMOPTION}" "${LVMRESIZE}" "${LVMVOLUME}"
+    resize2fs -p "${LVMVOLUME}"
     f_msg info "--- All done"
     df -kh | grep -E 'Filesystem|vg'
 }
 
 f_configmail() {
-    
+
     f_getvar "MAIL address for system notifications [default: nothing]: " ROOT_MAIL "root"
     f_msg info "Now please specify mail gateway and username/password if needed:"
     f_msg info "example: smtp.gmail.com:587 mymail@gmail.com mypassword"
     f_getvar "MAIL gateway [default: mail]: " MAIL_HOST "mail"
-    MAILHUB=$(echo $MAIL_HOST | cut -d' ' -f1)
-    MAILUSER=$(echo $MAIL_HOST | cut -d' ' -f2)
-    MAILPASS=$(echo $MAIL_HOST | cut -d' ' -f3)
+    MAILHUB="$(echo "${MAIL_HOST}" | cut -d' ' -f1)"
+    MAILUSER="$(echo "${MAIL_HOST}" | cut -d' ' -f2)"
+    MAILPASS="$(echo "${MAIL_HOST}" | cut -d' ' -f3)"
     sed -i "/^root:/ c root: ${ROOT_MAIL}" /etc/ssmtp/revaliases
     sed -i "/^mailhub=/ c mailhub=${MAILHUB}" /etc/ssmtp/ssmtp.conf
     sed -i "/^AuthUser=/ c AuthUser=${MAILUSER}" /etc/ssmtp/ssmtp.conf
@@ -455,34 +456,34 @@ f_configmail() {
 }
 
 f_configmirror() {
-    
+
     f_msg info "--- Autoselecting 3 fastest mirrors based on server responses"
     mirrorselect -s3 -b10 -o -D -t2 >> /etc/make.conf
     f_msg info "--- All done"
 }
 
 f_configtimezone() {
-    
+
     f_msg info "--- Changing system Timezone"
     f_getvar "Please specify capital city or format like - GMT+1" TZONE
-    TZONEFILE=`find /usr/share/zoneinfo/ -type f -iname $TZONE -exec ls {} \; grep -vE 'right|posix'`
-    if [ -z $TZONEFILE ]; then
+    TZONEFILE="$(find /usr/share/zoneinfo/ -type f -iname "${TZONE}" -exec ls {} \; grep -vE 'right|posix')"
+    if [ -z "${TZONEFILE}" ]; then
         f_msg warn "I was unable to find ${TZONE}, please try something else"
-        exit
-    else    
-        NEWTZONE=`echo ${TZONEFILE} | sed 's/\/usr\/share\/zoneinfo\///'`
-        cp $TZONEFILE /etc/localtime
+        exit_on_error
+    else
+        NEWTZONE="$(echo "${TZONEFILE}" | sed 's/\/usr\/share\/zoneinfo\///')"
+        cp "${TZONEFILE}" /etc/localtime
         sed -i "/^clock=/ c clock=\"${NEWTZONE}\"" /etc/conf.d/hwclock
         f_msg info "--- All done"
     fi
 }
 
 f_configwebproxy() {
-    
+
     f_msg info "--- Changing global webproxy settings"
     f_msg info "current proxy: ${http_proxy}"
     f_getvar "Specify new proxy in format \"http://\$servername:\$portnumber\": " NEWPROXY
-    if [ ! -z $http_proxy ]; then
+    if [ ! -z "${http_proxy}" ]; then
         sed -i "/^http_proxy=/ c http_proxy=\"${NEWPROXY}\"" /etc/make.conf
         sed -i "/^ftp_proxy=/ c ftp_proxy=\"${NEWPROXY}\"" /etc/make.conf
         sed -i "/^rsync_proxy=/ c rsync_proxy=\"${NEWPROXY}\"" /etc/make.conf
@@ -492,7 +493,7 @@ f_configwebproxy() {
         echo "rsync_proxy=\"${NEWPROXY}\"" >> /etc/make.conf
     fi
     wget --timeout=60 -q www.google.com
-    if [ $? -ne 0 ]; then
+    if [ "${?}" -ne "0" ]; then
         f_msg error "ERROR: Unable to contact google.com!"
         f_msg info  "Yes, Google can be down, but Occam's Razor would suggest \
 that you have problem with your Internet connectivity."
@@ -504,28 +505,28 @@ that you have problem with your Internet connectivity."
 }
 
 f_config() {
-    case "$2" in
-        backup|backu|back|bac|ba) f_configbackup "$@"
+    case "${2}" in
+        backup|backu|back|bac|ba) f_configbackup "${@}"
             ;;
-        bonding|bondin|bondi|bond|bon|bo) f_configbonding "$@"
+        bonding|bondin|bondi|bond|bon|bo) f_configbonding "${@}"
             ;;
-        firewall|firewal|firewa|firew|fire|fir|fi|f) f_configfirewall "$@"
+        firewall|firewal|firewa|firew|fire|fir|fi|f) f_configfirewall "${@}"
             ;;
-        grub|gru) f_configgrub "$@"
+        grub|gru) f_configgrub "${@}"
             ;;
-        grsec|grse|grs) f_configgrsec "$@"
+        grsec|grse|grs) f_configgrsec "${@}"
             ;;
-        luks|LUKS|luk|lu) f_configluks "$@"
+        luks|LUKS|luk|lu) f_configluks "${@}"
             ;;
-        lvm|LVM|lv) f_configlvm "$@"
+        lvm|LVM|lv) f_configlvm "${@}"
             ;;
-        mail|mai|ma) f_configmail "$@"
+        mail|mai|ma) f_configmail "${@}"
             ;;
-        mirror|mirro|mirr|mir|mi) f_configmirror "$@"
+        mirror|mirro|mirr|mir|mi) f_configmirror "${@}"
             ;;
-        timezone|timezon|timezo|timez|time|tim|ti|t) f_configtimezone "$@"
+        timezone|timezon|timezo|timez|time|tim|ti|t) f_configtimezone "${@}"
             ;;
-        webproxy|proxy|webprox|webpro|webpr|webp|web|we|w) f_configwebpropxy "$@"
+        webproxy|proxy|webprox|webpro|webpr|webp|web|we|w) f_configwebpropxy "${@}"
             ;;
         *)
             echo "securix config [option]"
@@ -541,7 +542,7 @@ f_config() {
             echo "mirror - change gentoo mirror server"
             echo "timezone - change timezone (default GMT)"
             echo "webproxy - change webproxy"
-            rm -f $LOCKFILE
+            rm -f "${LOCKFILE}"
             exit
             ;;
     esac
@@ -554,21 +555,22 @@ f_config() {
 ##############################################################################
 
 f_status() {
-    
+
     f_msg info "###-### Showing issues found in your system ---"
     issues=0
-    for status in ${SECURIXVAR}/*; do
-        if [ ! -z "$status" ]; then
-            grep -E '^#: Description' $status 2>&1 >/dev/null
-            if [ $? -eq 0 ]; then
-                grep -E '^#:' $status
-                grep -vE '^#:' $status
-                echo ""
-                ((issues++))
-            fi
-        fi
-    done
-    if [ $issues -eq 0 ]; then
+    statusfiles="$(ls "${SECURIXVAR}/*")"
+    if [ ! -z "${statusfiles}" ]; then
+        for status in ${statusfiles}; do
+            grep -E '^#: Description' "${status}" 2>&1 >/dev/null
+                if [ "${?}" -eq "0" ]; then
+                    grep -E '^#:' "${status}"
+                    grep -vE '^#:' "${status}"
+                    echo ""
+                    ((issues++))
+                fi
+        done
+    fi
+    if [ "${issues}" -eq "0" ]; then
         f_msg info "--- No issues found in your system. Well done!"
     fi
 }
@@ -580,13 +582,13 @@ f_status() {
 ##############################################################################
 
 f_info() {
-    
+
     f_msg info "--- Collecting system information"
     f_mktemp
-    cd $TEMPDIR
+    cd "${TEMPDIR}"
     emerge --info > emerge.info
     echo "Securix: ${SECURIXVERSION}, PATCH: ${SECURIXPATCHSUM}" > securix.info
-    cp $SECURIXLOG ./securix.log
+    cp "${SECURIXLOG}" ./securix.log
     dmidecode > dmidecode.info
     sysctl -a | grep grsecurity 2>/dev/null > grsec.info
     df -h > df.info
@@ -594,8 +596,8 @@ f_info() {
     free -lt > free.info
     uptime > uptime.info
     SYSFILE="/root/$(date +%F)-securix-info.tgz"
-    tar czf $SYSFILE ./*
-    f_msg info "--- All done, information saved in $SYSFILE"
+    tar czf "${SYSFILE}" ./*
+    f_msg info "--- All done, information saved in ${SYSFILE}"
 }
 
 ##############################################################################
@@ -607,22 +609,22 @@ f_info() {
 
 # First level - Main
 # "$@" will send each position parameter to function as quoted string
-case "$1" in
-    update|updat|upda|upd|up|u) TYPE="$1"; f_update "$@"
+case "${1}" in
+    update|updat|upda|upd|up|u) TYPE="${1}"; f_update "${@}"
         ;;
-    patch|patc|pat|pa|p) TYPE="$1"; f_patch "$@"
+    patch|patc|pat|pa|p) TYPE="${1}"; f_patch "${@}"
         ;;
-    check|chec|che|ch) TYPE="$1"; f_check "$@"
+    check|chec|che|ch) TYPE="${1}"; f_check "${@}"
         ;;
-    config|confi|conf|con|co|c) TYPE="$1"; f_config "$@"
+    config|confi|conf|con|co|c) TYPE="${1}"; f_config "${@}"
         ;;
-    monitor|monito|monit|moni|mon|mo|m) TYPE="$1"; f_monitor "$@"
+    monitor|monito|monit|moni|mon|mo|m) TYPE="${1}"; f_monitor "${@}"
         ;;
-    status|statu|stat|sta|st|s) TYPE="$1"; f_status "$@"
+    status|statu|stat|sta|st|s) TYPE="${1}"; f_status "${@}"
         ;;
-    info|inf) TYPE="$1"; f_info "$@"
+    info|inf) TYPE="${1}"; f_info "${@}"
         ;;
-    install|instal|insta|inst|ins) TYPE="$1"; f_install "$@"
+    install|instal|insta|inst|ins) TYPE="${1}"; f_install "${@}"
         ;;
     --version|-v|version)
         echo "Securix control script v${SECURIXVERSION} (${SECURIXPATCHSUM})"
@@ -630,7 +632,6 @@ case "$1" in
         f_printbanner
         ;;
     *)
-        echo "###-### Securix control script v${SECURIXVERSION} ###-###"
         echo "Usage: securix [option]"
         echo ""
         echo "update - update system, kernel, securix scripts, all"
@@ -646,13 +647,13 @@ case "$1" in
         echo ""
         echo "You can use also short form: \"u|up|upd|updat\" - for update, \"co|con|conf|confi\" for config ect."
         echo "Please report issues on https://github.com/martincmelik/securix/issues"
-        rm -f $LOCKFILE
+        rm -f "${LOCKFILE}"
         exit
         ;;
 esac
 
 # clean tempdir and lockfile
-rm -rf ${TEMPDIR}
-rm -f ${LOCKFILE}
+rm -rf "${TEMPDIR}"
+rm -f "${LOCKFILE}"
 
 exit

@@ -27,7 +27,7 @@
 ##############################################################################
 
 # load securix functions
-if [ ! -r /usr/sbin/securix-functions ]; then
+if [ ! -r "/usr/sbin/securix-functions" ]; then
     echo "--- PROBLEM: /usr/sbin/securix-functions doesnt exist!!"
     logger "CRITICAL: /usr/sbin/securix-functions doesnt exist!!"
     exit 1
@@ -42,10 +42,10 @@ fi
 ##############################################################################
 
 # Check if standard input is not a tty device (non-interactive shell).
-if [ "$INTERACTIVE" = "no" ]; then
-    
+if [ "${INTERACTIVE}" = "no" ]; then
+
     # which symlink call securix-cron?
-    case "$0" in
+    case "${0}" in
         *cron.hourly*) type="hourly"
             ;;
         *cron.daily*) type="daily"
@@ -55,11 +55,11 @@ if [ "$INTERACTIVE" = "no" ]; then
         *cron.monthly*) type="monthly"
             ;;
     esac
-    cron_start=$(date '+%s')
-    . /usr/sbin/securix-monitor ${type} 2>&1 >> $SECURIXLOG
+    cron_start="$(date '+%s')"
+    . /usr/sbin/securix-monitor "${type}" >> "${SECURIXLOG}" 2>&1
     cron_end=$(date '+%s')
     cron_run=$((cron_end - cron_start))
-    echo "=== Last cron ${TYPE} takes ${cron_run} seconds" >> $SECURIXLOG
+    echo "=== Last cron ${TYPE} takes ${cron_run} seconds" >> "${SECURIXLOG}"
 else
     echo "--- Error: Securix-cron executed interactively, exiting..."
 fi

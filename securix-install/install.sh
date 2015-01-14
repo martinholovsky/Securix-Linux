@@ -139,7 +139,7 @@ fi
 # set all the rest only if NETMANUAL is "no"
 NETIP=${NETIP:-"192.168.100.100"}
 NETMASK=${NETMASK:-"255.255.255.0"}
-NETGATEWAY${NETGATEWAY:-"192.168.100.1"}
+NETGATEWAY=${NETGATEWAY:-"192.168.100.1"}
 # primary and secondary DNS server
 NETDNS=${NETDNS:-"8.8.8.8"}
 NETDNS2=${NETDNS2:-"8.8.4.4"}
@@ -536,7 +536,7 @@ f_ask_network() {
             f_getvar "Specify default gateway [${NETGATEWAY}]: " NETGATEWAY "${NETGATEWAY}"
             f_getvar "Specify primary DNS server [${NETDNS}]: " NETDNS "${NETDNS}"
             f_getvar "Specify secondary DNS server [${NETDNS2}]: " NETDNS2 "${NETDNS2}"
-            f_getvar "Specify domain name [${NETDOMAIN}: " NETDOMAIN "${NETDOMAIN}"
+            f_getvar "Specify domain name [${NETDOMAIN}]: " NETDOMAIN "${NETDOMAIN}"
             f_getvar "Specify primary NTP server [${NETNTP}]" NETNTP "${NETNTP}"
             f_getvar "Specify secondary NTP server [${NETNTP2}" NETNTP2 "${NETNTP2}"
         fi
@@ -562,7 +562,7 @@ f_ask_network() {
             f_getvar "Specify default gateway [${NETGATEWAY}]: " NETGATEWAY "${NETGATEWAY}"
             f_getvar "Specify primary DNS server [${NETDNS}]: " NETDNS "${NETDNS}"
             f_getvar "Specify secondary DNS server [${NETDNS2}]: " NETDNS2 "${NETDNS2}"
-            f_getvar "Specify domain name [${NETDOMAIN}: " NETDOMAIN "${NETDOMAIN}"
+            f_getvar "Specify domain name [${NETDOMAIN}]: " NETDOMAIN "${NETDOMAIN}"
             f_getvar "Specify primary NTP server [${NETNTP}]" NETNTP "${NETNTP}"
             f_getvar "Specify secondary NTP server [${NETNTP2}" NETNTP2 "${NETNTP2}"
         fi
