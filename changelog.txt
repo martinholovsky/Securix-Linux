@@ -5,6 +5,11 @@
 #
 #-#
 
+RELEASE: 20150114
+    
+- couple of minor fixes
+- coding convention alignment
+
 RELEASE: 20150102
     
 - minor improvements
