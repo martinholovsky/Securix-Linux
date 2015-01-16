@@ -52,6 +52,16 @@ exit_on_error() {
 
 You can also source error trap from `/usr/sbin/securix-functions` definition.
 
+```bash
+# load securix functions
+if [ ! -r "/usr/sbin/securix-functions" ]; then
+    echo "--- PROBLEM: /usr/sbin/securix-functions doesnt exist!!"
+    logger "CRITICAL: /usr/sbin/securix-functions doesnt exist!!"
+    exit 1
+else
+    . /usr/sbin/securix-functions
+fi
+```
 
 ## Overview
 - use 4 spaces Tab length

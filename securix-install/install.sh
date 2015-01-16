@@ -69,13 +69,13 @@ SECURIX_CHROOT=${SECURIX_CHROOT:-"/install/chroot.sh"}
 KERNELCONFIG=${KERNELCONFIG:-"/install/kernel/hardened-${ARCH}.config"}
 GMIRROR=${GMIRROR:-"http://ftp.fi.muni.cz/pub/linux/gentoo/"}
 GPG_EXTRA_OPTS=${GPG_EXTRA_OPTS:-"-quiet"}
-CPUS=$(grep -c '^processor' /proc/cpuinfo)
-MOPTS=$((CPUS + 1))
+CPUS="$(grep -c '^processor' /proc/cpuinfo)"
+MOPTS="$((CPUS + 1))"
 GENKERNEL=${GENKERNEL:-"--install --symlink --save-config --makeopts=-j${MOPTS} --kernname=securix --kernel-config=/hardened-kernel.config"}
 GRUBOPTS=${GRUBOPTS:-"vga=791 quiet"}
-SECURIXID=$(ifconfig -a | sha1sum | awk '{ print $1 }')
-INTERFACES=$(ifconfig -a | grep -c eth)
-INTERFACES_FOUND=$(ifconfig -a | grep -E '^*: ' | cut -d: -f1 | grep -vE '^lo')
+SECURIXID="$(ifconfig -a | sha1sum | awk '{ print $1 }')"
+INTERFACES="$(ifconfig -a | grep -c eth)"
+INTERFACES_FOUND="$(ifconfig -a | grep -E '^*: ' | cut -d: -f1 | grep -vE '^lo')"
 LOGFILE=${LOGFILE:-"/root/securix-install.log"}
 LOCKFILE=${LOCKFILE:-"/root/securix.lock"}
 CHROOTOK=${CHROOTOK:-"/mnt/gentoo/chroot.ok"}
@@ -818,7 +818,7 @@ f_setup_stage3() {
     # stderr: gpg status messages (gpg: Signature made etc.)
     # exit code: non-zero if it cannot be verified, otherwise 0.
     f_msg info "###-### Step: Verifying Stage3 GPG signature"
-    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --decrypt "${STAGE3LATESTFILE##*/}.DIGESTS.asc" --output "stage3latestfile_clear_text"
+    gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --output "stage3latestfile_clear_text" --decrypt "${STAGE3LATESTFILE##*/}.DIGESTS.asc"
     if [ "${?}" -ne "0" ]; then
         f_msg error "Gentoo GPG signature of Stage3 file do not match !!"
         exit_on_error
@@ -1246,7 +1246,7 @@ f_parse_cmd() {
                 # use it together with -c or -s as at least root password must be changed
                 AUTOBUILD="yes"
                 ;;
-            "--c="*|"--conf="*|"--config="*)
+            "-c="*|"--conf="*|"--config="*)
                 # load variables/setup from different file
                 CONFIGFILE="${argument#*=}"
                 f_msg info "Sourcing configuration file: ${CONFIGFILE}"
@@ -1265,7 +1265,7 @@ f_parse_cmd() {
             --mountlvm)
                 # for debug purposes or when you forget root password
                 # mount Securix LVM partitions
-                f_getvar "Please specify disk with Securix installation (example: /dev/sda): " SXDISK
+                f_getvar "Please specify disk with Securix installation (example: /dev/sda): " SXDISK "/dev/sda"
                 f_msg info "--- Scanning for volume groups"
                 vgscan
                 vgchange -a y
@@ -1279,12 +1279,13 @@ f_parse_cmd() {
                 f_msg info "--- Changing context"
                 cd /mnt/gentoo
                 f_msg info "###-#### Youre now in Securix root folder (${PWD})"
+                # do not continue and exit
                 exit
                 ;;
             --mountluks)
                 # for debug purposes or when you forget root password
                 # mount Securix LUKS and LVM partitions
-                f_getvar "Please specify disk with Securix installation (example: /dev/sda): " SXDISK
+                f_getvar "Please specify disk with Securix installation (example: /dev/sda): " SXDISK "/dev/sda"
                 f_msg info "--- Now opening LUKS"
                 cryptsetup luksOpen "${SXDISK}3" root
                 f_msg info "--- Scanning for volume groups"
@@ -1300,6 +1301,29 @@ f_parse_cmd() {
                 f_msg info "--- Changing context"
                 cd /mnt/gentoo
                 f_msg info "###-#### Youre now in Securix root folder (${PWD})"
+                # do not continue and exit
+                exit
+                ;;
+            --help|-h)
+                # print script help
+                echo "Usage: "${0}" [option]"
+                echo ""
+                echo "-a|--auto|--autobuild"
+                echo "Mode without questions during build. Please verify first default variables as at least root password must be changed."
+                echo "You can change variables manually and then use \"-s\" option or change them by own configuration file \"-c\" (prefered)."
+                echo ""
+                echo "-c=[file/url]|--conf=[file/url]|--config=[file/url]"
+                echo "Load variables/setup from configuration file. File could be local path or URL address. You can find all variables at the beginning of script."
+                echo ""
+                echo "-s|--skip|--skipsign"
+                echo "Do not verify install script signature. Use only when you must modify install script."
+                echo ""
+                echo "--mountlvm"
+                echo "Mount existing Securix installation which is NOT using LUKS (for debug or failsave purposes)"
+                echo ""
+                echo "--mountluks"
+                echo "mount existing Securix installation which is using LUKS (for debug or failsave purposes)"
+                # do not continue and exit
                 exit
                 ;;
         esac

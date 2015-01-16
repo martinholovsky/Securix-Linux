@@ -353,8 +353,13 @@ f_setup_grub() {
     # setup grub
     f_msg info "###-### Step: Setting Grub ---"
 
-    KERNELIMG=$(ls /boot/*kernel*securix*)
-    INITRAMIMG=$(ls /boot/*initramfs*securix*)
+    # find kernel image
+    KERNELIMG="$(ls /boot/*kernel*securix*)"
+    # find initramfs
+    INITRAMIMG="$(ls /boot/*initramfs*securix*)"
+    # remove /boot/
+    KERNELIMG="${KERNELIMG##*/}"
+    INITRAMIMG="${INITRAMIMG##*/}"
 
     cat > /boot/grub/grub.conf << !EOF
 # info: Securix GNU/Linux grub.conf
