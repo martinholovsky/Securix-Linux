@@ -558,13 +558,13 @@ f_status() {
 
     f_msg info "###-### Showing issues found in your system ---"
     issues=0
-    statusfiles="$(ls "${SECURIXVAR}/*")"
+    statusfiles="$(ls "${SECURIXVAR}")"
     if [ ! -z "${statusfiles}" ]; then
         for status in ${statusfiles}; do
-            grep -E '^#: Description' "${status}" 2>&1 >/dev/null
+            grep -E '^#: Description' "${SECURIXVAR}/${status}" 2>&1 >/dev/null
                 if [ "${?}" -eq "0" ]; then
-                    grep -E '^#:' "${status}"
-                    grep -vE '^#:' "${status}"
+                    grep -E '^#:' "${SECURIXVAR}/${status}"
+                    grep -vE '^#:' "${SECURIXVAR}/${status}"
                     echo ""
                     ((issues++))
                 fi
