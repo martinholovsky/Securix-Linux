@@ -27,7 +27,7 @@
 # VARIABLES
 #
 ##############################################################################
-TYPE="$1"
+TYPE="${1}"
 mailfile="${SECURIXVAR}/securix-mailer.compose.${RANDOM}"
 mailheader="
  Dear administrator,
@@ -36,10 +36,10 @@ this is mail from server ${HOSTNAME} where we find problems during last scan.
 Please be so kind and solve them or modify settings to appropriate state.
 "
 mailfooter="
-For more information please visit http://wiki.securix.org
+For more information please visit http://wiki.securix.org.
 
 Thank you
-Your Securix
+Your Securix GNU/Linux
 "
 
 # unset variables
@@ -52,7 +52,7 @@ unset systemalert subject
 ##############################################################################
 
 # load securix functions
-if [ ! -r /usr/sbin/securix-functions ]; then
+if [ ! -r "/usr/sbin/securix-functions" ]; then
     echo "--- PROBLEM: /usr/sbin/securix-functions doesnt exist!!"
     logger "CRITICAL: /usr/sbin/securix-functions doesnt exist!!"
     exit 1
@@ -64,31 +64,31 @@ fi
 f_loadsecurixconf
 
 # avoid interactive executing
-if [ "$INTERACTIVE" = "yes" ]; then
+if [ "${INTERACTIVE}" = "yes" ]; then
     f_msg error "--- Error: this script must be executed by cron and shouldn't run interactively"
     exit 1
 fi
 
 f_composealerts() {
-    if [ ! -z $systemalerts ]; then
-        echo "${mailheader}" > ${mailfile} && chmod 700 ${mailfile}
+    if [ ! -z "${systemalerts}" ]; then
+        echo "${mailheader}" > "${mailfile}" && chmod 700 "${mailfile}"
         for alert in ${systemalerts}; do
-            grep -E '^#:' ${alert} >> ${mailfile}
-            grep -vE '^#:' ${alert} >> ${mailfile}
-            echo "" >> ${mailfile}
+            grep -E '^#:' "${alert}" >> "${mailfile}"
+            grep -vE '^#:' "${alert}" >> "${mailfile}"
+            echo "" >> "${mailfile}"
         done
-        echo "${mailfooter}" >> ${mailfile}
+        echo "${mailfooter}" >> "${mailfile}"
     else
         echo "--- OK: Nothing to be send during ${TYPE} type"
     fi
 }
 
 f_sendalerts() {
-    if [ -s ${mailfile} ]; then
-        mail -s "${subject}" root < ${mailfile} 2>${SECURIXVAR}/securix-mailer.critical
-        if [ ! -s ${SECURIXVAR}/securix-mailer.critical ]; then
+    if [ -s "${mailfile}" ]; then
+        mail -s "${subject}" root < "${mailfile}" 2>"${SECURIXVAR}/securix-mailer.critical"
+        if [ ! -s "${SECURIXVAR}/securix-mailer.critical" ]; then
             echo "--- OK: Securix alert has been sent successfully"
-            rm -f ${SECURIXVAR}/securix-mailer.critical
+            rm -f "${SECURIXVAR}/securix-mailer.critical"
         else
             echo "--- PROBLEM: There was problem when Securix sending mail alert"
         fi
@@ -98,28 +98,28 @@ f_sendalerts() {
 }
 
 f_mailerhourly() {
-    systemalerts=$(ls ${SECURIXVAR} | grep "critical")
+    systemalerts="$(ls "${SECURIXVAR}" | grep "critical")"
     subject="Securix found critical issue on your server ${HOSTNAME}"
     f_composealerts
     f_sendalerts
 }
 
 f_mailerdaily() {
-    systemalerts=$(ls ${SECURIXVAR} | grep "critical|warning")
+    systemalerts="$(ls "${SECURIXVAR}" | grep "critical|warning")"
     subject="Securix found issues which needs your attention on server ${HOSTNAME}"
     f_composealerts
     f_sendalerts
 }
 
 f_mailerweekly() {
-    systemalerts=$(ls ${SECURIXVAR} | grep "critical|warning|update|info")
+    systemalerts="$(ls "${SECURIXVAR}" | grep "critical|warning|update|info")"
     subject="Securix weekly report from server ${HOSTNAME}"
     f_composealerts
     f_sendalerts
 }
 
 f_mailermonthly() {
-    
+
    echo "--- Nothing to do during monthly scans"
 }
 
@@ -129,7 +129,7 @@ f_mailermonthly() {
 #
 ##############################################################################
 
-case $1 in
+case "${1}" in
     hourly) f_mailerhourly
         ;;
     daily) f_mailerdaily
@@ -146,9 +146,9 @@ esac
 
 
 # touch securix.mail
-touch ${SECURIXVAR}/securix.mailer
+touch "${SECURIXVAR}/securix.mailer"
 
 # cleanup
-rm -f ${mailfile}
+rm -f "${mailfile}"
 
 exit

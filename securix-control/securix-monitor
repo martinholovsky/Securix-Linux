@@ -5,6 +5,7 @@
 #: description: Securix Monitor script executed by cron
 #: This script monitor system health, security, setup and save status into files
 #: located in $SECURIXVAR. Reporting is done by securix-mailer and securix-motd
+#: This script is dependent on error codes, so do not use error trap
 #: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
 #
 #
@@ -36,7 +37,7 @@
 ##############################################################################
 
 # load securix functions
-if [ ! -r /usr/sbin/securix-functions ]; then
+if [ ! -r "/usr/sbin/securix-functions" ]; then
     logger "CRITICAL: /usr/sbin/securix-functions doesnt exist!!"
     echo "CRITICAL: /usr/sbin/securix-functions doesnt exist!!"
     exit 1
@@ -51,13 +52,13 @@ fi
 ##############################################################################
 
 # check permissions
-if [ $EUID -ne 0 ]; then
+if [ "${EUID}" -ne "0" ]; then
     f_msg error "This script must be run as root or via sudo"
     exit 1
 fi
 
 # avoid interactive executing
-if [ "$INTERACTIVE" = "yes" ]; then
+if [ "${INTERACTIVE}" = "yes" ]; then
     f_msg error "--- Error: this script must be executed by cron and shouldn't run interactively"
     exit 1
 fi
@@ -66,7 +67,7 @@ fi
 f_loadsecurixconf
 
 # init log
-echo "=== Securix monitor START ($(date '+%F %T')), type: ${1}, id: $$" >> $SECURIXLOG
+echo "=== Securix monitor START ($(date '+%F %T')), type: ${1}, id: ${$}" >> "${SECURIXLOG}"
 
 ##############################################################################
 #
@@ -75,67 +76,67 @@ echo "=== Securix monitor START ($(date '+%F %T')), type: ${1}, id: $$" >> $SECU
 ##############################################################################
 
 f_monitorhourly() {
-    
+
 # Check disk space, default SX_DISK_ALERT threshold is 90%
 # delete monitor file before next run
-rm -f ${SECURIXVAR}/disk-space.critical
+rm -f "${SECURIXVAR}/disk-space.critical"
 df -H -P | grep -vE "${SX_DISK_MONITORING_EXEMPTION}" | awk '{ print $5 " " $6 }' | while read DISKSPACE; do
-    if [ ! -z "$DISKSPACE" ]; then
-        USEP=$(echo "$DISKSPACE" | awk '{ print $1 }' | cut -d'%' -f1)
-        PART=$(echo "$DISKSPACE" | awk '{ print $2 }')
-        if [ $USEP -ge $SX_DISK_ALERT ]; then
-            echo "--- Running out of space on partition: \"${PART} (${USEP}%)\"" >> ${SECURIXVAR}/disk-space.critical
+    if [ ! -z "${DISKSPACE}" ]; then
+        USEP=$(echo "${DISKSPACE}" | awk '{ print $1 }' | cut -d'%' -f1)
+        PART=$(echo "${DISKSPACE}" | awk '{ print $2 }')
+        if [ "${USEP}" -ge "${SX_DISK_ALERT}" ]; then
+            echo "--- Running out of space on partition: \"${PART} (${USEP}%)\"" >> "${SECURIXVAR}/disk-space.critical"
         fi
     fi
 done
-if [ ! -s ${SECURIXVAR}/disk-space.critical ]; then
+if [ ! -s "${SECURIXVAR}/disk-space.critical" ]; then
     echo "--- OK: Disk space"
-    rm -f ${SECURIXVAR}/disk-space.critical
+    rm -f "${SECURIXVAR}/disk-space.critical"
 else
     echo "--- PROBLEM: Disk space reach critical threshold"
     # attach information about allocable size
-    echo "--- Here is free space which you can allocate to partition by \"securix config lvm\":" >> ${SECURIXVAR}/disk-space.critical
-    vgdisplay | grep -E 'Free|Name|---' >> ${SECURIXVAR}/disk-space.critical
+    echo "--- Here is free space which you can allocate to partition by \"securix config lvm\":" >> "${SECURIXVAR}/disk-space.critical"
+    vgdisplay | grep -E 'Free|Name|---' >> "${SECURIXVAR}/disk-space.critical"
 fi
 
 # Check inode free space, default SX_INODE_ALERT threshold is 95%
 # delete monitor file before next run
-rm -f ${SECURIXVAR}/inode-space.critical
+rm -f "${SECURIXVAR}/inode-space.critical"
 df -i | grep -vE "${SX_DISK_MONITORING_EXEMPTION}" | awk '{ print $5 " " $6 }' | while read INODESPACE; do
-    if [ ! -z "$INODESPACE" ]; then
-        USEP=$(echo "$INODESPACE" | awk '{ print $1 }' | cut -d'%' -f1)
-        PART=$(echo "$INODESPACE" | awk '{ print $2 }')
-        if [ $USEP -ge $SX_INODE_ALERT ]; then
-            echo "--- Running out of inode on partition: \"${PART} (${USEP}%)\"" >> ${SECURIXVAR}/inode-space.critical
+    if [ ! -z "${INODESPACE}" ]; then
+        USEP=$(echo "${INODESPACE}" | awk '{ print $1 }' | cut -d'%' -f1)
+        PART=$(echo "${INODESPACE}" | awk '{ print $2 }')
+        if [ "${USEP}" -ge "${SX_INODE_ALERT}" ]; then
+            echo "--- Running out of inode on partition: \"${PART} (${USEP}%)\"" >> "${SECURIXVAR}/inode-space.critical"
         fi
     fi
 done
-if [ ! -s ${SECURIXVAR}/inode-space.critical ]; then
+if [ ! -s "${SECURIXVAR}/inode-space.critical" ]; then
     echo "--- OK: Inode space"
-    rm -f ${SECURIXVAR}/inode-space.critical
+    rm -f "${SECURIXVAR}/inode-space.critical"
 else
     echo "--- PROBLEM: Inode space reach critical threshold"
 fi
 
 # Check if syslog is running
-tail /var/log/messages | md5sum > ${SECURIXVAR}/syslog.hash.temp
-diff ${SECURIXVAR}/syslog.hash.temp ${SECURIXVAR}/syslog.hash
-if [ $? -eq 0 ]; then
+tail /var/log/messages | md5sum > "${SECURIXVAR}/syslog.hash.temp"
+diff "${SECURIXVAR}/syslog.hash.temp" "${SECURIXVAR}/syslog.hash"
+if [ "${?}" -eq "0" ]; then
     echo "--- PROBLEM: Syslog is not running!!"
-    touch ${SECURIXVAR}/syslog.critical
+    touch "${SECURIXVAR}/syslog.critical"
 else
     echo "--- OK: Syslog is running"
-    rm -f ${SECURIXVAR}/syslog.critical
-    mv ${SECURIXVAR}/syslog.hash.temp ${SECURIXVAR}/syslog.hash
+    rm -f "${SECURIXVAR}/syslog.critical"
+    mv "${SECURIXVAR}/syslog.hash.temp" "${SECURIXVAR}/syslog.hash"
 fi
 
 # Check status of interfaces assigned to bond
 if [ -f /proc/net/bonding/bond* ]; then
-    rm -f ${SECURIXVAR}/bonding.warning
-    for bonding in ls /proc/net/bonding/bond*; do
-        grep "MII Status: down" $bonding
-        if [ $? -eq 0 ]; then
-            echo "There is problem with ${bonding}, MII status is down" >> ${SECURIXVAR}/bonding.warning
+    rm -f "${SECURIXVAR}/bonding.warning"
+    for bonding in /proc/net/bonding/bond*; do
+        grep "MII Status: down" "${bonding}"
+        if [ "${?}" -eq "0" ]; then
+            echo "There is problem with ${bonding}, MII status is down" >> "${SECURIXVAR}/bonding.warning"
         else
             echo "--- OK: Bond ${bonding}"
         fi
@@ -144,31 +145,31 @@ fi
 
 # Find processes and ports hiding in system
 unhide procall sys reverse >/dev/null
-if [ $? -eq 0 ]; then
+if [ "${?}" -eq "0" ]; then
     echo "--- OK: No hidden processes found in system"
-    rm -f ${SECURIXVAR}/hidden-proc.critical
+    rm -f "${SECURIXVAR}/hidden-proc.critical"
 else
     echo "--- PROBLEM: Hidden process found in system!!"
-    touch ${SECURIXVAR}/hidden-proc.critical
+    touch "${SECURIXVAR}/hidden-proc.critical"
 fi
 
 unhide-tcp -n >/dev/null
-if [ $? -eq 0 ]; then
+if [ "${?}" -eq "0" ]; then
     echo "--- OK: No hidden ports found in system"
-    rm -f ${SECURIXVAR}/hidden-tcp.critical
+    rm -f "${SECURIXVAR}/hidden-tcp.critical"
 else
     echo "--- PROBLEM: Hidden ports found in system!!"
-    touch ${SECURIXVAR}/hidden-tcp.critical
+    touch "${SECURIXVAR}/hidden-tcp.critical"
 fi
 
 # Check entropy available bits, 112 is FIPS-140 requirement
-ENTROPYSIZE=$(cat /proc/sys/kernel/random/entropy_avail)
-if [ $ENTROPYSIZE -lt 112 ]; then
+ENTROPYSIZE="$(cat /proc/sys/kernel/random/entropy_avail)"
+if [ "${ENTROPYSIZE}" -lt "112" ]; then
     echo "--- PROBLEM: You have low available entropy. It can potentially affect or DoS your server/service. Install rng-tools to temporary solve it"
-    touch ${SECURIXVAR}/entropy.critical
+    touch "${SECURIXVAR}/entropy.critical"
 else
     echo "--- OK: You have enough entropy available"
-    rm -f ${SECURIXVAR}/entropy.critical
+    rm -f "${SECURIXVAR}/entropy.critical"
 fi
 
 # process new alerts
@@ -177,7 +178,7 @@ f_processalert
 # at the end execute securix-mailer
 /usr/sbin/securix-mailer hourly
 
-} 2>&1 >> $SECURIXLOG
+} >> "${SECURIXLOG}" 2>&1
 
 ##############################################################################
 #
@@ -190,105 +191,105 @@ f_monitordaily() {
 # Sync portage, update portage, update gentoolkit
 f_msg info "###-### Syncing portage ---"
 emerge-webrsync --quiet
-if [ $? -ne 0 ]; then
+if [ "${?}" -ne "0" ]; then
     echo "--- PROBLEM: Problem detected during emerge-webrsync, trying rsync..."
     emerge --sync --quiet
-    if [ $? -ne 0 ]; then
+    if [ "${?}" -ne "0" ]; then
         echo "--- PROBLEM: Unable to update portage at all !!"
-        touch ${SECURIXVAR}/portage.warning
+        touch "${SECURIXVAR}/portage.warning"
         exit_on_error
     fi
 else
     echo "--- OK: Portage updated"
-    rm -f ${SECURIXVAR}/portage.warning
+    rm -f "${SECURIXVAR}/portage.warning"
 fi
 f_updatepackage portage
 f_updatepackage gentoolkit
 
 # Check new version of Securix
-f_download ${SECURIXUPDATE}/cgi-bin/current.py?sxver=${SECURIXVERSION}\&sxid=${SECURIXID} ${SECURIXUPDATEDR}/cgi-bin/current.py?sxver=${SECURIXVERSION}\&sxid=${SECURIXID}
+f_download "${SECURIXUPDATE}/cgi-bin/current.py?sxver=${SECURIXVERSION}\&sxid=${SECURIXID}" "${SECURIXUPDATEDR}/cgi-bin/current.py?sxver=${SECURIXVERSION}\&sxid=${SECURIXID}"
 
-LASTVERSION=$(<current.py)
+LASTVERSION="$(<current.py)"
 rm -f current.py
 
-if [ "$SECURIXVERSION" -eq "$LASTVERSION" -a "$LASTVERSION" != "" ]; then
-    rm -f ${SECURIXVAR}/securix.update
+if [ "${SECURIXVERSION}" -eq "${LASTVERSION}" -a "${LASTVERSION}" != "" ]; then
+    rm -f "${SECURIXVAR}/securix.update"
     echo "--- OK: Securix is up-to-date"
 else
-    echo "${LASTVERSION}" > ${SECURIXVAR}/securix.update
+    echo "${LASTVERSION}" > "${SECURIXVAR}/securix.update"
     echo "--- INFO: New Securix update available - ${LASTVERSION}"
 fi
 
 # GLSA check
-glsa-check -v -c --test all > ${SECURIXVAR}/glsa-check.critical
-if [ $? -eq 0 ]; then
-    rm -f ${SECURIXVAR}/glsa-check.critical
+glsa-check -v -c --test all > "${SECURIXVAR}/glsa-check.critical"
+if [ "${?}" -eq "0" ]; then
+    rm -f "${SECURIXVAR}/glsa-check.critical"
     echo "--- OK: System is not affected by any known GLSA"
 else
     echo "--- PROBLEM: System is affected by known GLSA!!"
 fi
 
 # Equery check - binary consistency
-equery -N -C check -o '*' 2>${SECURIXVAR}/equery.temp
-grep -v "does not exist" ${SECURIXVAR}/equery.temp | cut -d' ' -f2 | xargs file | grep -E "ELF|executable|script" > ${SECURIXVAR}/equery.warning
-rm -f ${SECURIXVAR}/equery.temp
+equery -N -C check -o '*' 2>"${SECURIXVAR}/equery.temp"
+grep -v "does not exist" "${SECURIXVAR}/equery.temp" | cut -d' ' -f2 | xargs file | grep -E "ELF|executable|script" > "${SECURIXVAR}/equery.warning"
+rm -f "${SECURIXVAR}/equery.temp"
 
-if [ ! -s ${SECURIXVAR}/equery.warning ]; then
+if [ ! -s "${SECURIXVAR}/equery.warning" ]; then
     echo "--- OK: Equery check (binary consistency) is OK"
-    rm -f ${SECURIXVAR}/equery.warning
+    rm -f "${SECURIXVAR}/equery.warning"
 else
     echo "--- PROBLEM: Equery found system binary inconsistency!!"
 fi
 
 # Rkhunter check
-grep -E "Warning|Error" /var/log/rkhunter.log > ${SECURIXVAR}/rkhunter.warning
-if [ $? -ne 0 ]; then
+grep -E "Warning|Error" /var/log/rkhunter.log > "${SECURIXVAR}/rkhunter.warning"
+if [ "${?}" -ne "0" ]; then
     echo "--- OK: Rkhunter found nothing suspicious"
-    rm -f ${SECURIXVAR}/rkhunter.warning
+    rm -f "${SECURIXVAR}/rkhunter.warning"
 else
     echo "--- PROBLEM: Rkhunter detect something suspicious!"
 fi
 
 # Check services
-rc-status | grep -vE 'started|Runlevel' | awk '{ print $1 }' > ${SECURIXVAR}/rc-status.warning
-if [ $? -eq 0 ]; then
+rc-status | grep -vE 'started|Runlevel' | awk '{ print $1 }' > "${SECURIXVAR}/rc-status.warning"
+if [ "${?}" -eq "0" ]; then
     echo "--- OK: All services running"
-    rm -f ${SECURIXVAR}/rc-status.warning
+    rm -f "${SECURIXVAR}/rc-status.warning"
 else
     echo "--- PROBLEM: Some services defined in runlevels aren't runnning"
 fi
 
 # Check world writeable files and directories (exclude sticky directories, links, /proc and /dev)
-find / ! \( -wholename '/proc/*' -prune -o -wholename '/dev/*' -prune \) -perm -o=w ! \( -type d -perm -o=t \) ! -type l > ${SECURIXVAR}/world-writeable.info
-if [ ! -z "$SX_WRITEABLE_EXEMPTIONS" ]; then
-    grep -vE "${SX_WRITEABLE_EXEMPTIONS}" ${SECURIXVAR}/world-writeable.info > ${SECURIXVAR}/world-writeable.temp
-    mv ${SECURIXVAR}/world-writeable.temp ${SECURIXVAR}/world-writeable.info
+find / ! \( -wholename '/proc/*' -prune -o -wholename '/dev/*' -prune \) -perm -o=w ! \( -type d -perm -o=t \) ! -type l > "${SECURIXVAR}/world-writeable.info"
+if [ ! -z "${SX_WRITEABLE_EXEMPTIONS}" ]; then
+    grep -vE "${SX_WRITEABLE_EXEMPTIONS}" "${SECURIXVAR}/world-writeable.info" > "${SECURIXVAR}/world-writeable.temp"
+    mv "${SECURIXVAR}/world-writeable.temp" "${SECURIXVAR}/world-writeable.info"
 fi
-if [ ! -s ${SECURIXVAR}/world-writeable.info ]; then
-    rm -f ${SECURIXVAR}/world-writeable.info
+if [ ! -s "${SECURIXVAR}/world-writeable.info" ]; then
+    rm -f "${SECURIXVAR}/world-writeable.info"
     echo "--- OK: No world writeable file or directory found"
 else
     echo "--- PROBLEM: Some world writeable file/s or folder/s found"
 fi
 
 # Check if there doesnt exist new suid/sgid file
-find / ! \( -wholename '/proc/*' -prune \) -perm -u=s -o -perm -g=s ! -type d | grep -vE "${SX_SUGID_EXEMPTIONS}" > ${SECURIXVAR}/suid-sgid.info
-if [ ! -z "$SX_SUGID_EXEMPTIONS" ]; then
-    grep -vE "${SX_SUGID_EXEMPTIONS}" ${SECURIXVAR}/suid-sgid.info > ${SECURIXVAR}/suid-sgid.temp
-    mv ${SECURIXVAR}/suid-sgid.temp ${SECURIXVAR}/suid-sgid.info
+find / ! \( -wholename '/proc/*' -prune \) -perm -u=s -o -perm -g=s ! -type d | grep -vE "${SX_SUGID_EXEMPTIONS}" > "${SECURIXVAR}/suid-sgid.info"
+if [ ! -z "${SX_SUGID_EXEMPTIONS}" ]; then
+    grep -vE "${SX_SUGID_EXEMPTIONS}" "${SECURIXVAR}/suid-sgid.info" > "${SECURIXVAR}/suid-sgid.temp"
+    mv "${SECURIXVAR}/suid-sgid.temp" "${SECURIXVAR}/suid-sgid.info"
 fi
-if [ ! -s ${SECURIXVAR}/suid-sgid.info ]; then
-    rm -f ${SECURIXVAR}/suid-sgid.info
+if [ ! -s "${SECURIXVAR}/suid-sgid.info" ]; then
+    rm -f "${SECURIXVAR}/suid-sgid.info"
     echo "--- OK: No new suid or sgid file found"
 else
     echo "--- PROBLEM: New suid or sgid file/s found"
 fi
 
 # Find files or diretories without existing user or group
-find / ! \( -wholename '/proc/*' -prune \) -nouser -o -nogroup > ${SECURIXVAR}/no-owner.info
-if [ ! -s ${SECURIXVAR}/no-owner.info ]; then
-    rm -f ${SECURIXVAR}/no-owner.info
-    echo "--- OK: All files have existing owner or group"
+find / ! \( -wholename '/proc/*' -prune \) -nouser -o -nogroup > "${SECURIXVAR}/no-owner.info"
+if [ ! -s "${SECURIXVAR}/no-owner.info" ]; then
+    rm -f "${SECURIXVAR}/no-owner.info"
+    echo "--- OK: All files have existing owner and group"
 else
     echo "--- PROBLEM: Found file/s without proper owner or group"
 fi
@@ -299,7 +300,7 @@ f_processalert
 # at the end execute securix-mailer
 securix-mailer daily
 
-} 2>&1 >> $SECURIXLOG
+} >> "${SECURIXLOG}" 2>&1
 
 ##############################################################################
 #
@@ -308,10 +309,10 @@ securix-mailer daily
 ##############################################################################
 
 f_monitorweekly() {
-    
+
     echo "--- OK: Nothing to check on week basis"
-    
-} 2>&1 >> $SECURIXLOG
+
+} >> "${SECURIXLOG}" 2>&1
 
 ##############################################################################
 #
@@ -320,10 +321,10 @@ f_monitorweekly() {
 ##############################################################################
 
 f_monitorweekly() {
-    
+
     echo "--- OK: Nothing to check on month basis"
-    
-} 2>&1 >> $SECURIXLOG
+
+} >> "${SECURIXLOG}" 2>&1
 
 ##############################################################################
 #
@@ -332,23 +333,23 @@ f_monitorweekly() {
 ##############################################################################
 
 f_processalert() {
-    
+
     for alert in ${SECURIXVAR}/*; do
-        grep -E '^#:' ${alert} > /dev/null
-        if [ $? -ne 0 ]; then
-            f_commentalert ${alert##*/}
+        grep -E '^#:' "${alert}" > /dev/null
+        if [ "${?}" -ne "0" ]; then
+            f_commentalert "${alert##*/}"
         fi
     done
 }
 
 f_commentalert() {
-    
+
     # usage: f_commentalert trigger.severity
     trigger="#: Trigger: ${1%%.*}"
     severity="#: Severity: ${1##*.}"
     unset description solution
-    
-    case $1 in
+
+    case "${1}" in
         disk-space.critical)
             description="#: Description: It seems that you reach threshold for maximum disk space use which is ${SX_DISK_ALERT}%. Reaching 100% can corrupt your server/data."
             solution="#: Solution: Run \"securix config lvm\" and check if you can allocate more disk space to partition. Otherwise move or delete data."
@@ -424,10 +425,10 @@ f_commentalert() {
             echo "--- No description available for ${1}"
             ;;
     esac
-    
+
     # only if it is known file/trigger
-    if [ ! -z "$description" -o ! -z "$solution" ]; then    
-        echo -e "${trigger}\n${severity}\n${description}\n${solution}\n" >> ${SECURIXVAR}/${1}
+    if [ ! -z "${description}" -o ! -z "${solution}" ]; then
+        echo -e "${trigger}\n${severity}\n${description}\n${solution}\n" >> "${SECURIXVAR}/${1}"
     fi
 }
 
@@ -437,14 +438,14 @@ f_commentalert() {
 #
 ##############################################################################
 
-case $1 in
-    hourly) TYPE="$1"; f_monitorhourly
+case "${1}" in
+    hourly) TYPE="${1}"; f_monitorhourly
         ;;
-    daily) TYPE="$1"; f_monitordaily
+    daily) TYPE="${1}"; f_monitordaily
         ;;
-    weekly) TYPE="$1"; f_monitorweekly
+    weekly) TYPE="${1}"; f_monitorweekly
         ;;
-    monthly) TYPE="$1"; f_monitormonthly
+    monthly) TYPE="${1}"; f_monitormonthly
         ;;
     *)
         echo "Error: Invalid parameter ${1}"
@@ -459,8 +460,8 @@ esac
 ##############################################################################
 
 # touch securix cron file, one has to be deleted XXXXXXXXXX
-touch ${SECURIXVAR}/securix.cron
-touch ${SECURIXVAR}/securix.monitor
+touch "${SECURIXVAR}/securix.cron"
+touch "${SECURIXVAR}/securix.monitor"
 
-echo "=== Securix monitor END ($(date '+%F %T')), type: ${1}, id: $$" >> $SECURIXLOG
+echo "=== Securix monitor END ($(date '+%F %T')), type: ${1}, id: $$" >> "${SECURIXLOG}"
 exit

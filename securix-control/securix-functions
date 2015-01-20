@@ -44,7 +44,7 @@ txtyellow='\e[0;33m'
 txtdefault='\e[00m'
 
 # check if script is running interactively or not
-if [ -t 0 -a "$TERM" != "dumb" ]; then
+if [ -t 0 -a "${TERM}" != "dumb" ]; then
     INTERACTIVE="yes"
 else
     INTERACTIVE="no"
@@ -64,14 +64,14 @@ trap exit_on_error 1 2 3 15 ERR
 exit_on_error() {
     local exit_status=${1:-$?}
     echo -e "${txtred}--- Exiting ${0} with status: ${exit_status} ${txtdefault}"
-    echo "--- Error occured ($(date '+%F %T')) in ${0} with status/on line: ${exit_status}; parent process: ${$} ($(cat /proc/$$/cmdline)); pipe: ${PIPESTATUS}; ssh client: ${SSH_CLIENT}" >> $SECURIXLOG
-    if [ -d /var/sx-temp.${TEMPDIR##*.} ]; then
-        rm -rf /var/sx-temp.${TEMPDIR##*.}
+    echo "--- Error occured ($(date '+%F %T')) in ${0} with status/on line: ${exit_status}; parent process: ${$} ($(cat /proc/$$/cmdline)); pipe: ${PIPESTATUS}; ssh client: ${SSH_CLIENT}" >> "${SECURIXLOG}"
+    if [ -d "/var/sx-temp.${TEMPDIR##*.}" ]; then
+        rm -rf "/var/sx-temp.${TEMPDIR##*.}"
     fi
-    if [ -r $LOCKFILE ]; then
-        rm -f $LOCKFILE
+    if [ -r "${LOCKFILE}" ]; then
+        rm -f "${LOCKFILE}"
     fi
-    exit $exit_status
+    exit "${exit_status}"
 }
 
 ##############################################################################
@@ -87,9 +87,9 @@ f_loadsecurixconf() {
         logger "CRITICAL: /etc/securix/securix.conf doesnt exist!!"
         exit 1
     fi
-    
-    SECURIXCONFIG=$(grep -vE '^$|^#|&|;' /etc/securix/securix.conf | grep -E '^SX_')
-    if [ -z "$SECURIXCONFIG" ]; then
+
+    SECURIXCONFIG="$(grep -vE '^$|^#|&|;' /etc/securix/securix.conf | grep -E '^SX_')"
+    if [ -z "${SECURIXCONFIG}" ]; then
         echo "--- PROBLEM: Unable to load /etc/securix/securix.conf !!"
         logger "CRITICAL: Unable to load /etc/securix/securix.conf !!"
         exit 1
@@ -102,7 +102,7 @@ f_loadsecurixconf() {
 
 f_msg() {
     #example: f_msg info "This is info message"
-    case "$1" in
+    case "${1}" in
         error) echo -e "${txtred}${2} ${txtdefault}" ;;
         warn) echo -e "${txtyellow}${2} ${txtdefault}" ;;
         info) echo -e "${txtgreen}${2} ${txtdefault}" ;;
@@ -116,12 +116,12 @@ f_yesno() {
     local answer
     echo -ne "${txtblue}-- Q: ${1} (yes/NO): ${txtdefault}"
     read answer
-    case "$answer" in
+    case "${answer}" in
         y|Y|yes|YES|Yes) yesno="yes" ;;
         *) yesno="no" ;;
     esac
-    if [ ! -z "$2" ]; then
-        eval $2="$yesno"
+    if [ ! -z "${2}" ]; then
+        eval "${2}"="${yesno}"
     fi
 }
 
@@ -131,11 +131,11 @@ f_getvar() {
     echo -ne "${txtblue}-- Q: ${1} ${txtdefault}"
     read answer
     #set default when null
-    if [ -z "$answer" ]; then
-        local defaultvar=${3:?Error answer and default value is null}
-        eval $2="$3"
+    if [ -z "${answer}" ]; then
+        local defaultvar=${3:?"Error answer and default value is null"}
+        eval "${2}"="${3}"
     else
-        eval $2="$answer"
+        eval "${2}"="${answer}"
     fi
 }
 
@@ -146,11 +146,11 @@ f_getpass() {
     read -s -p "" answer
     f_msg newline
     #set default when null
-    if [ -z "$answer" ]; then
-        local defaultvar=${3:?Error answer and default value is null}
-        eval $2="$3"
+    if [ -z "${answer}" ]; then
+        local defaultvar=${3:?"Error answer and default value is null"}
+        eval "${2}"="${3}"
     else
-        eval $2="$answer"
+        eval "${2}"="${answer}"
     fi
 }
 
@@ -158,25 +158,25 @@ f_grep() {
     #example: f_grep " ept " /proc/cpuinfo EPTFLAG
     #if string exist 3rd parameter have value "yes"
     grep "${1}" "${2}" > /dev/null
-    if [ $? -eq 0 ]; then
-        export $3="yes"
+    if [ "${?}" -eq "0" ]; then
+        export "${3}"="yes"
     else
-        export $3="no"
+        export "${3}"="no"
     fi
 }
 
 f_validip() {
     #example: f_validip 1.2.3.4
     #validate IP address format
-    ip="$1"
+    ip="${1}"
     local IFS='.'
     # set IP as positional parameter for each oktet
-    set -- $ip
+    set -- "${ip}"
     # check that IP contain only numbers and dots
-    if [[ "$ip" =~ "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$" ]]; then
-        
+    if [[ "${ip}" =~ "^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$" ]]; then
+
         # check each positional parameter
-        if [[ ${1} -le 255 && ${2} -le 255 && ${3} -le 255 && ${4} -le 255 ]]; then
+        if [[ "${1}" -le "255" && "${2}" -le "255" && "${3}" -le "255" && "${4}" -le "255" ]]; then
             VALIDIP="yes"
         else
             VALIDIP="no"
@@ -189,51 +189,51 @@ f_validip() {
 f_mktemp() {
     #example: f_mktemp
     #creates temp dir, temp files should be inside
-    TEMPDIR=$(mktemp -d /tmp/sx-temp.XXXXXXXXXXXXXXXXXX${RANDOM}${RANDOM})
-    TMPDIR=${TEMPDIR}
+    TEMPDIR="$(mktemp -d /tmp/sx-temp.XXXXXXXXXXXXXXXXXX${RANDOM}${RANDOM})"
+    TMPDIR="${TEMPDIR}"
 }
 
 f_download() {
     #usage: f_download $link $backup-link
     #example: f_download https://x.y.z/file.tgz https://mirror.x.y.z/file.tgz
-    if [ -z $1 ]; then
+    if [ -z "${1}" ]; then
         echo "--- Error: No URL provided"
     fi
     # propagate error code in pipelines
     set -o pipefail
-    local downlink="$1"
-    local backuplink="$2"
-    local downfile=${downlink##*/}
-    local backupfile=${backuplink##*/}
+    local downlink="${1}"
+    local backuplink="${2}"
+    local downfile="${downlink##*/}"
+    local backupfile="${backuplink##*/}"
     local wgeterror="no"
     # remove parameters from link
-    downfile=${downfile%%\?*}
-    backupfile=${backupfile%%\?*}
+    downfile="${downfile%%\?*}"
+    backupfile="${backupfile%%\?*}"
     # remove previous files if any
-    rm -f ${downfile} ${backupfile}
+    rm -f "${downfile}" "${backupfile}"
     echo "Downloading: ${downlink}"
     echo -n "Status:     "
     wget --timeout=30 --secure-protocol="PFS" --https-only --no-cache --progress=dot -O "${downfile}" "${downlink}" 2>&1 | grep --line-buffered "%" | \
         sed -u -e "s,\.,,g" | awk '{printf("\b\b\b\b%4s", $2)}'
-    if [ $? -ne 0 ]; then
+    if [ "${?}" -ne "0" ]; then
         wgeterror="yes"
     fi
     echo " DONE"
-    if [ -f $downfile -a "$wgeterror" = "no" ]; then
+    if [ -f "${downfile}" -a "${wgeterror}" = "no" ]; then
         downloaded="yes"
         return 0
     else
         wgeterror="no"
-        if [ ! -z $backuplink ]; then
+        if [ ! -z "${backuplink}" ]; then
             echo "Downloading from mirror: ${backuplink}"
             echo -n "Status:     "
             wget --timeout=30 --secure-protocol="PFS" --https-only --no-cache --progress=dot -O "${backupfile}" "${backuplink}" 2>&1 | grep --line-buffered "%" | \
                 sed -u -e "s,\.,,g" | awk '{printf("\b\b\b\b%4s", $2)}'
-            if [ $? -ne 0 ]; then
+            if [ "${?}" -ne "0" ]; then
                 wgeterror="yes"
             fi
             echo " DONE"
-            if [ -f $backupfile -a "$wgeterror" = "no" ]; then
+            if [ -f "${backupfile}" -a "${wgeterror}" = "no" ]; then
                 downloaded="yes"
                 return 0
             else
@@ -249,14 +249,14 @@ f_download() {
 
 f_updatepackage() {
     #example: f_updatepackage $ebuild-name
-    ls -d /var/db/pkg/*/* | cut -f5- -d/ | grep "$1"
-    if [ $? -ne 0 ]; then
+    ls -d /var/db/pkg/*/* | cut -f5- -d/ | grep "${1}"
+    if [ "${?}" -ne "0" ]; then
         f_msg error "--- Package ${1} doesn't exist in system"
         exit 1
     fi
-    emerge -p "$1" | grep -E '"$1"|\[ebuild     U  \]' > /dev/null
-    if [ $? -eq 0 ]; then
-        emerge --quiet "$1"
+    emerge -p "${1}" | grep "${1}" | grep "ebuild     U  " >/dev/null
+    if [ "${?}" -eq "0" ]; then
+        emerge --quiet "${1}"
         return 0
     else
         f_msg info "--- No update available/needed"
@@ -267,10 +267,10 @@ f_updatepackage() {
 f_updateportage() {
     f_msg info "###-### Syncing portage ---"
     emerge-webrsync --quiet
-    if [ $? -ne 0 ]; then
+    if [ "${?}" -ne "0" ]; then
         f_msg warn "--- Problem detected during emerge-webrsync, trying rsync..."
         emerge --sync --quiet
-        if [ $? -ne 0 ]; then
+        if [ "${?}" -ne "0" ]; then
             f_msg error "--- Unable to update portage !!"
             exit 1
         fi
@@ -293,10 +293,10 @@ f_printbanner() {
 }
 
 # check Securix VAR directory
-if [ ! -d $SECURIXVAR -a $EUID -eq 0 ]; then
-    mkdir -p $SECURIXVAR
-    chmod 0655 $SECURIXVAR
-    chown root:admin $SECURIXVAR
-    echo "--- PROBLEM: Securix VAR directory created" >> $SECURIXLOG
+if [ ! -d "${SECURIXVAR}" -a "${EUID}" -eq "0" ]; then
+    mkdir -p "${SECURIXVAR}"
+    chmod 0655 "${SECURIXVAR}"
+    chown root:admin "${SECURIXVAR}"
+    echo "--- PROBLEM: Securix VAR directory created" >> "${SECURIXLOG}"
     logger "WARNING: Securix VAR directory created"
 fi
