@@ -158,9 +158,8 @@ f_setup_locale() {
 en_US ISO-8859-1
 en_US.UTF-8 UTF-8
 !EOF
-    cat > /etc/env.d/02locale << !EOF
-LANG="en_US.UTF-8"
-!EOF
+    ESELECTLOCALE="$(eselect locale list | grep utf8 | cut -d[ -f2 | cut -d] -f1)"
+    eselect locale set "${ESELECTLOCALE}"
     sed -i 's/unicode=\"NO\"/unicode=\"YES\"/g' /etc/rc.conf
     locale-gen
 }
@@ -495,10 +494,10 @@ f_setup_gentoo_gpg() {
     gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --import /usr/share/securix/gentoo-gpg-autobuild.pub
     gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint DCD05B71EAB94199527F44ACDB6B8C1F96D8BF6D
     gpg ${GPG_EXTRA_OPTS} --homedir /etc/portage/gpg --fingerprint 13EBBDBEDE7A12775DFDB1BABB572E0E2D182910
-    echo "PORTAGE_GPG_DIR=\"/etc/portage/gpg\"" >> /etc/make.conf
-    echo "# Disable 'emerge --sync', so emerge-webrsync will be used" >> /etc/make.conf
-    echo "SYNC=\"\"" >> /etc/make.conf
-    sed -i 's/USE\=\"/USE\=\"webrsync-gpg /g' /etc/make.conf
+    echo "PORTAGE_GPG_DIR=\"/etc/portage/gpg\"" >> /etc/portage/make.conf/00_securix_make.conf
+    echo "# Disable 'emerge --sync', so emerge-webrsync will be used" >> /etc/portage/make.conf/00_securix_make.conf
+    echo "SYNC=\"\"" >> /etc/portage/make.conf/00_securix_make.conf
+    sed -i 's/USE\=\"/USE\=\"webrsync-gpg /g' /etc/portage/make.conf/00_securix_make.conf
 }
 
 f_setup_fail2ban() {
@@ -575,12 +574,12 @@ f_send_mail() {
     cat > mail_test << !EOF
 Dear administrator,
 
-please be informed that you successfuly install Securix GNU/Linux on server ${HOSTNAME}.
+please be informed that you successfuly install Securix GNU/Linux on server ${SECURIX_HOSTNAME}.
 
 Thank you
 !EOF
     f_msg info "###-### Step: Sending test mail to root"
-    mail -s "Securix installation on ${HOSTNAME}" root < mail_test 2>mail_error
+    mail -s "Securix installation on ${SECURIX_HOSTNAME}" root < mail_test 2>mail_error
     if [ -r "mail_error" ]; then
         f_msg warn "--- We have identified issue when sending mail to root. Please set appropriately /etc/ssmtp/ssmtp.conf"
     fi

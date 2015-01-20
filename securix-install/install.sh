@@ -80,6 +80,7 @@ LOGFILE=${LOGFILE:-"/root/securix-install.log"}
 LOCKFILE=${LOCKFILE:-"/root/securix.lock"}
 CHROOTOK=${CHROOTOK:-"/mnt/gentoo/chroot.ok"}
 USER_PASSWORD=${USER_PASSWORD:-"pass${RANDOM}"}
+#"#
 txtred='\e[0;31m'
 txtblue='\e[1;34m'
 txtgreen='\e[0;32m'
@@ -922,23 +923,24 @@ f_verify_signature() {
 
 f_setup_makeconf() {
     f_msg info "###-### Step: Configuring base system ---"
-    # /etc/make.conf
-    cat > /mnt/gentoo/etc/make.conf << !EOF
+    # /etc/portage/make.conf/00_securix_make.conf
+    mkdir -p /mnt/gentoo/etc/portage/make.conf/
+    cat > /mnt/gentoo/etc/portage/make.conf/00_securix_make.conf << !EOF
 
 #: title: Securix GNU/Linux make.conf
-#: file: /etc/make.conf
+#: file: /etc/portage/make.conf/00_securix_make.conf
 #: author: Martin Cmelik (cm3l1k1) - securix.org, security-portal.cz
 #
-# Do not make any changes in this file. Use /etc/portage/make.conf for customization
+# Do not make any changes in this file. Create new in /etc/portage/make.conf/ for customization
 #
 # Please consult /usr/share/portage/config/make.conf.example for a more
 # detailed example.
 #
 
-ACCEPT_KEYWORDS="$ARCH"
+ACCEPT_KEYWORDS="${ARCH}"
 CFLAGS="-march=native -O2 -fforce-addr -pipe"
 CXXFLAGS="\${CFLAGS}"
-CHOST="$CHOSTS"
+CHOST="${CHOSTS}"
 MAKEOPTS="-j${MOPTS}"
 USE="-X -kde -gnome -qt4 -gtk -suid -jit hardened pic pax_kernel chroot secure-delete ncurses symlink bash-completion ldap gnutls ssl crypt tcpd pam xml perl python snmp unicode jpeg png vim-syntax mmx readline"
 FEATURES="sandbox sfperms strict buildpkg userfetch parallel-fetch"
@@ -956,11 +958,11 @@ PORTAGE_NICENESS=10
 f_setup_proxies() {
     # set http_proxy if used
     if [ ! -z "${http_proxy}" ]; then
-        echo "# user proxy setup is done by /etc/profile.d/sx-proxy.sh" >> /mnt/gentoo/etc/make.conf
-        echo "http_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/make.conf
-        echo "https_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/make.conf
-        echo "ftp_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/make.conf
-        echo "RSYNC_PROXY=\"${http_proxy}\"" >> /mnt/gentoo/etc/make.conf
+        echo "# user proxy setup is done by /etc/profile.d/sx-proxy.sh" >> /mnt/gentoo/etc/portage/make.conf/00_securix_make.conf
+        echo "http_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/portage/make.conf/00_securix_make.conf
+        echo "https_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/portage/make.conf/00_securix_make.conf
+        echo "ftp_proxy=\"${http_proxy}\"" >> /mnt/gentoo/etc/portage/make.conf/00_securix_make.conf
+        echo "RSYNC_PROXY=\"${http_proxy}\"" >> /mnt/gentoo/etc/portage/make.conf/00_securix_make.conf
     fi
 }
 
