@@ -26,18 +26,21 @@
 #
 ##############################################################################
 
-CHROOTOK=${CHROOTOK:-"/chroot.ok"}
-CHROOTVAR=${CHROOTVAR:-"/chroot.var"}
-SECURIXVERSION=${SECURIXVERSION:-"$(date +%F)"}
-txtred='\e[0;31m'
-txtblue='\e[1;34m'
-txtgreen='\e[0;32m'
-txtwhite='\e[0;37m'
-txtdefault='\e[00m'
-txtyellow='\e[0;33m'
+f_define_vars() {
 
-# Load installer variables
-. "${CHROOTVAR}"
+    CHROOTOK=${CHROOTOK:-"/chroot.ok"}
+    CHROOTVAR=${CHROOTVAR:-"/chroot.var"}
+    SECURIXVERSION=${SECURIXVERSION:-"$(date +%F)"}
+    txtred='\e[0;31m'
+    txtblue='\e[1;34m'
+    txtgreen='\e[0;32m'
+    txtwhite='\e[0;37m'
+    txtdefault='\e[00m'
+    txtyellow='\e[0;33m'
+
+    # Load installer variables
+    . "${CHROOTVAR}"
+}
 
 ##############################################################################
 #
@@ -597,6 +600,7 @@ f_all_done() {
 
 f_install_chroot() {
     # execute chroot functions
+    f_define_vars
     f_load_env
     f_setup_locale
     f_setup_timezone

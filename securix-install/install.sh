@@ -22,26 +22,28 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-# define arch and variables
-case "${HOSTTYPE}" in
-    x86_64)
-        ARCH="amd64"
-        SUBARCH="amd64"
-        KERNELPATH="x86_64"
-        CHOSTS="x86_64-pc-linux-gnu"
-        modprobe aes_x86_64
-        ;;
-#    i386|i486|i586|i686)
-#        ARCH="x86"
-#        SUBARCH="i686"
-#        KERNELPATH="i386"
-#        CHOSTS="i686-pc-linux-gnu"
-#        ;;
-    *)
-    	echo "ERROR: valid architecture not found - ${HOSTTYPE}"
-    	exit 1
-    	;;
-esac
+f_check_arch() {
+    # define arch and variables
+    case "${HOSTTYPE}" in
+        x86_64)
+            ARCH="amd64"
+            SUBARCH="amd64"
+            KERNELPATH="x86_64"
+            CHOSTS="x86_64-pc-linux-gnu"
+            modprobe aes_x86_64
+            ;;
+            #    i386|i486|i586|i686)
+            #        ARCH="x86"
+            #        SUBARCH="i686"
+            #        KERNELPATH="i386"
+            #        CHOSTS="i686-pc-linux-gnu"
+            #        ;;
+        *)
+            echo "ERROR: valid architecture not found - ${HOSTTYPE}"
+            exit 1
+            ;;
+    esac
+}
 
 ##############################################################################
 #
@@ -55,103 +57,106 @@ esac
 # VARIABLE=${VARIABLE:-"Default value"}
 ##############################################################################
 
-SECURIX_STAGE3BASEURL=${SECURIX_STAGE3BASEURL:-"https://mirror.securix.org/releases/${ARCH}/autobuilds/"}
-SECURIX_STAGE3LATESTTXT=${SECURIX_STAGE3LATESTTXT:-"latest-stage3-${SUBARCH}-hardened.txt"}
-SECURIX_PORTAGEFILE=${SECURIX_PORTAGEFILE:-"https://mirror.securix.org/releases/snapshots/current/portage-latest.tar.bz2"}
-# gentoo servers usually do not use https and if so, it is just self-signed certificate
-GENTOO_STAGE3BASEURL=${GENTOO_STAGE3BASEURL:-"http://distfiles.gentoo.org/releases/${ARCH}/autobuilds/"}
-STAGE3LATESTTXT=${STAGE3LATESTTXT:-"latest-stage3-${SUBARCH}-hardened.txt"}
-GENTOO_PORTAGEFILE=${GENTOO_PORTAGEFILE:-"http://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2"}
-SECURIX_FILES=${SECURIX_FILES:-"https://update.securix.org"}
-SECURIX_FILESDR=${SECURIX_FILESDR:-"http://securix.sourceforge.net"}
-SECURIX_SYSTEMCONF=${SECURIX_SYSTEMCONF:-"/install/conf.tar.gz"}
-SECURIX_CHROOT=${SECURIX_CHROOT:-"/install/chroot.sh"}
-KERNELCONFIG=${KERNELCONFIG:-"/install/kernel/hardened-${ARCH}.config"}
-GMIRROR=${GMIRROR:-"http://ftp.fi.muni.cz/pub/linux/gentoo/"}
-GPG_EXTRA_OPTS=${GPG_EXTRA_OPTS:-"-quiet"}
-CPUS="$(grep -c '^processor' /proc/cpuinfo)"
-MOPTS="$((CPUS + 1))"
-GENKERNEL=${GENKERNEL:-"--install --symlink --save-config --makeopts=-j${MOPTS} --kernname=securix --kernel-config=/hardened-kernel.config"}
-GRUBOPTS=${GRUBOPTS:-"vga=791 quiet"}
-SECURIXID="$(ifconfig -a | sha1sum | awk '{ print $1 }')"
-INTERFACES="$(ifconfig -a | grep -c eth)"
-INTERFACES_FOUND="$(ifconfig -a | grep -E '^*: ' | cut -d: -f1 | grep -vE '^lo')"
-LOGFILE=${LOGFILE:-"/root/securix-install.log"}
-LOCKFILE=${LOCKFILE:-"/root/securix.lock"}
-CHROOTOK=${CHROOTOK:-"/mnt/gentoo/chroot.ok"}
-USER_PASSWORD=${USER_PASSWORD:-"pass${RANDOM}"}
-#"#
-txtred='\e[0;31m'
-txtblue='\e[1;34m'
-txtgreen='\e[0;32m'
-txtwhite='\e[0;37m'
-txtdefault='\e[00m'
-txtyellow='\e[0;33m'
-# partitioning
-PBOOTS=${PBOOTS:-"+256M"}
-DISKMIN=${DISKMIN:-"18000000000"}
-DISKOPTIM=${DISKOPTIM:-"38000000000"}
-BOOTOPTS=${BOOTOPTS:-"noauto,relatime,nodiratime"}
-ROOTOPTS=${ROOTOPTS:-"defaults,relatime,nodiratime"}
-USROPTS=${USROPTS:-"defaults,relatime,nodiratime,nodev"}
-HOMEOPTS=${HOMEOPTS:-"defaults,relatime,nodiratime,nodev,nosuid"}
-OPTOPTS=${OPTOPTS:-"defaults"}
-VAROPTS=${VAROPTS:-"defaults,relatime,nodiratime,nodev,nosuid,noexec"}
-PORTAGEOPTS=${PORTAGEOPTS:-"defaults,relatime,nodiratime,nodev,nosuid"}
-TMPOPTS=${TMPOPTS:-"defaults,relatime,nodiratime,nodev,nosuid,noexec"}
+f_define_vars() {
 
-#
-# System setup for autobuild
-#
+    SECURIX_STAGE3BASEURL=${SECURIX_STAGE3BASEURL:-"https://mirror.securix.org/releases/${ARCH}/autobuilds/"}
+    SECURIX_STAGE3LATESTTXT=${SECURIX_STAGE3LATESTTXT:-"latest-stage3-${SUBARCH}-hardened.txt"}
+    SECURIX_PORTAGEFILE=${SECURIX_PORTAGEFILE:-"https://mirror.securix.org/releases/snapshots/current/portage-latest.tar.bz2"}
+    # gentoo servers usually do not use https and if so, it is just self-signed certificate
+    GENTOO_STAGE3BASEURL=${GENTOO_STAGE3BASEURL:-"http://distfiles.gentoo.org/releases/${ARCH}/autobuilds/"}
+    STAGE3LATESTTXT=${STAGE3LATESTTXT:-"latest-stage3-${SUBARCH}-hardened.txt"}
+    GENTOO_PORTAGEFILE=${GENTOO_PORTAGEFILE:-"http://distfiles.gentoo.org/releases/snapshots/current/portage-latest.tar.bz2"}
+    SECURIX_FILES=${SECURIX_FILES:-"https://update.securix.org"}
+    SECURIX_FILESDR=${SECURIX_FILESDR:-"http://securix.sourceforge.net"}
+    SECURIX_SYSTEMCONF=${SECURIX_SYSTEMCONF:-"/install/conf.tar.gz"}
+    SECURIX_CHROOT=${SECURIX_CHROOT:-"/install/chroot.sh"}
+    KERNELCONFIG=${KERNELCONFIG:-"/install/kernel/hardened-${ARCH}.config"}
+    GMIRROR=${GMIRROR:-"http://ftp.fi.muni.cz/pub/linux/gentoo/"}
+    GPG_EXTRA_OPTS=${GPG_EXTRA_OPTS:-"-quiet"}
+    CPUS="$(grep -c '^processor' /proc/cpuinfo)"
+    MOPTS="$((CPUS + 1))"
+    GENKERNEL=${GENKERNEL:-"--install --symlink --save-config --makeopts=-j${MOPTS} --kernname=securix --kernel-config=/hardened-kernel.config"}
+    GRUBOPTS=${GRUBOPTS:-"vga=791 quiet"}
+    SECURIXID="$(ifconfig -a | sha1sum | awk '{ print $1 }')"
+    INTERFACES="$(ifconfig -a | grep -c eth)"
+    INTERFACES_FOUND="$(ifconfig -a | grep -E '^*: ' | cut -d: -f1 | grep -vE '^lo')"
+    LOGFILE=${LOGFILE:-"/root/securix-install.log"}
+    LOCKFILE=${LOCKFILE:-"/root/securix.lock"}
+    CHROOTOK=${CHROOTOK:-"/mnt/gentoo/chroot.ok"}
+    USER_PASSWORD=${USER_PASSWORD:-"pass${RANDOM}"}
+    #"#
+    txtred='\e[0;31m'
+    txtblue='\e[1;34m'
+    txtgreen='\e[0;32m'
+    txtwhite='\e[0;37m'
+    txtdefault='\e[00m'
+    txtyellow='\e[0;33m'
+    # partitioning
+    PBOOTS=${PBOOTS:-"+256M"}
+    DISKMIN=${DISKMIN:-"18000000000"}
+    DISKOPTIM=${DISKOPTIM:-"38000000000"}
+    BOOTOPTS=${BOOTOPTS:-"noauto,relatime,nodiratime"}
+    ROOTOPTS=${ROOTOPTS:-"defaults,relatime,nodiratime"}
+    USROPTS=${USROPTS:-"defaults,relatime,nodiratime,nodev"}
+    HOMEOPTS=${HOMEOPTS:-"defaults,relatime,nodiratime,nodev,nosuid"}
+    OPTOPTS=${OPTOPTS:-"defaults"}
+    VAROPTS=${VAROPTS:-"defaults,relatime,nodiratime,nodev,nosuid,noexec"}
+    PORTAGEOPTS=${PORTAGEOPTS:-"defaults,relatime,nodiratime,nodev,nosuid"}
+    TMPOPTS=${TMPOPTS:-"defaults,relatime,nodiratime,nodev,nosuid,noexec"}
 
-SECURIX_HOSTNAME=${SECURIX_HOSTNAME:-"securix"}
-# change root password, s3cur1x can't be used
-ROOT_PASSWORD=${ROOT_PASSWORD:-"s3cur1x"}
-ROOT_PASSWORD2=${ROOT_PASSWORD2:-"s3cur1x"}
-# default mail address for system notifications, better is group mail address
-ROOT_MAIL=${ROOT_MAIL:-root}
-# define mail server hostname, default is mail = based on MX records
-MAIL_HOST=${MAIL_HOST:-mail}
-# running under virtual? if not, default Securix kernel will be used in autobuild
-VIRTUAL=${VIRTUAL:-"yes"}
-# if so, possible options: VIRTUALBOX, KVM, XEN, VMWARE
-VIRTUALHOST=${VIRTUALHOST:-"VIRTUALBOX"}
-# specify device where to install Securix
-DEVICE=${DEVICE:-"/dev/sda"}
-# format destination DEVICE?
-DELETEDISK=${DELETEDISK:-"yes"}
-# use full disk encryption? (LUKS) cant be automated
-USELUKS=${USELUKS:-"no"}
-# do you want to setup bonding?
-BONDING=${BONDING:-"no"}
-# set only if BONDING is yes
-BONDINGMODE=${BONDINGMODE:-"1"}
-BONDINGSLAVE=${BONDINGSLAVE:-"eth0 eth1"}
-# Manual setup? no = DHCP
-NETMANUAL=${NETMANUAL:-"no"}
-# use DHCP?
-USEDHCP=${USEDHCP:-"yes"}
-# network interface name
-if [ "${INTERFACES}" -eq "1" ]; then
-    NETETH="${INTERFACES_FOUND}"
-else
-    NETETH=${NETETH:-"eth0"}
-fi
-# set all the rest only if NETMANUAL is "no"
-NETIP=${NETIP:-"192.168.100.100"}
-NETMASK=${NETMASK:-"255.255.255.0"}
-NETGATEWAY=${NETGATEWAY:-"192.168.100.1"}
-# primary and secondary DNS server
-NETDNS=${NETDNS:-"8.8.8.8"}
-NETDNS2=${NETDNS2:-"8.8.4.4"}
-# server domain
-NETDOMAIN=${NETDOMAIN:-"securix.local"}
-# primary and secondary NTP server
-NETNTP=${NETNTP:-"0.gentoo.pool.ntp.org"}
-NETNTP2=${NETNTP2:-"1.gentoo.pool.ntp.org"}
+    #
+    # System setup for autobuild
+    #
 
-# set to yes, if you want to load config file also during chroot execution
-CHROOTCONFIG=${CHROOTCONFIG:-"no"}
+    SECURIX_HOSTNAME=${SECURIX_HOSTNAME:-"securix"}
+    # change root password, s3cur1x can't be used
+    ROOT_PASSWORD=${ROOT_PASSWORD:-"s3cur1x"}
+    ROOT_PASSWORD2=${ROOT_PASSWORD2:-"s3cur1x"}
+    # default mail address for system notifications, better is group mail address
+    ROOT_MAIL=${ROOT_MAIL:-root}
+    # define mail server hostname, default is mail = based on MX records
+    MAIL_HOST=${MAIL_HOST:-mail}
+    # running under virtual? if not, default Securix kernel will be used in autobuild
+    VIRTUAL=${VIRTUAL:-"yes"}
+    # if so, possible options: VIRTUALBOX, KVM, XEN, VMWARE
+    VIRTUALHOST=${VIRTUALHOST:-"VIRTUALBOX"}
+    # specify device where to install Securix
+    DEVICE=${DEVICE:-"/dev/sda"}
+    # format destination DEVICE?
+    DELETEDISK=${DELETEDISK:-"yes"}
+    # use full disk encryption? (LUKS) cant be automated
+    USELUKS=${USELUKS:-"no"}
+    # do you want to setup bonding?
+    BONDING=${BONDING:-"no"}
+    # set only if BONDING is yes
+    BONDINGMODE=${BONDINGMODE:-"1"}
+    BONDINGSLAVE=${BONDINGSLAVE:-"eth0 eth1"}
+    # Manual setup? no = DHCP
+    NETMANUAL=${NETMANUAL:-"no"}
+    # use DHCP?
+    USEDHCP=${USEDHCP:-"yes"}
+    # network interface name
+    if [ "${INTERFACES}" -eq "1" ]; then
+        NETETH="${INTERFACES_FOUND}"
+    else
+        NETETH=${NETETH:-"eth0"}
+    fi
+    # set all the rest only if NETMANUAL is "no"
+    NETIP=${NETIP:-"192.168.100.100"}
+    NETMASK=${NETMASK:-"255.255.255.0"}
+    NETGATEWAY=${NETGATEWAY:-"192.168.100.1"}
+    # primary and secondary DNS server
+    NETDNS=${NETDNS:-"8.8.8.8"}
+    NETDNS2=${NETDNS2:-"8.8.4.4"}
+    # server domain
+    NETDOMAIN=${NETDOMAIN:-"securix.local"}
+    # primary and secondary NTP server
+    NETNTP=${NETNTP:-"0.gentoo.pool.ntp.org"}
+    NETNTP2=${NETNTP2:-"1.gentoo.pool.ntp.org"}
+
+    # set to yes, if you want to load config file also during chroot execution
+    CHROOTCONFIG=${CHROOTCONFIG:-"no"}
+}
 
 ##############################################################################
 #
@@ -1188,6 +1193,8 @@ f_banner_completed() {
 
 f_install_securix() {
     # execute all steps
+    f_check_arch
+    f_define_vars
     f_banner
     f_basic_check
     f_check_networking
