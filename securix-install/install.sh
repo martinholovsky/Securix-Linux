@@ -928,6 +928,8 @@ f_verify_signature() {
 
 f_setup_makeconf() {
     f_msg info "###-### Step: Configuring base system ---"
+    # delete default file, as we need directory
+    rm -f /mnt/gentoo/etc/portage/make.conf
     # /etc/portage/make.conf/00_securix_make.conf
     mkdir -p /mnt/gentoo/etc/portage/make.conf/
     cat > /mnt/gentoo/etc/portage/make.conf/00_securix_make.conf << !EOF
