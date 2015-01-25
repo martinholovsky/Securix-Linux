@@ -604,6 +604,7 @@ f_install_chroot() {
     f_load_env
     f_setup_locale
     f_setup_timezone
+    f_setup_hostname
     f_setup_network_rc
     f_setup_root_pass
     f_setup_hardened_profile
