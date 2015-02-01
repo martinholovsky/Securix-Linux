@@ -5,35 +5,39 @@
 #
 #-#
 
+RELEASE: 20150201
+
+- added git GPG signing option
+
 RELEASE: 20150114
-    
+
 - couple of minor fixes
 - coding convention alignment
 
 RELEASE: 20150102
-    
+
 - minor improvements
 - fixed build issues
 
 RELEASE: 20141230
-    
+
 - redesign of install.sh
 - redesign of chroot.sh
 - fixed #59 #69
 - coding convention updated
 
 RELEASE: 20141222
-    
+
 - redesign of install.sh script #68
 
 RELEASE: 20141221
-    
+
 - fixed issue #1 syslog-ng configuration
 - usage of long gpg fingerprints #64
 - couple of minor fixes
 
 RELEASE: 20141220
-    
+
 - default password must be now changed by user #61
 - make.conf has been moved to /etc/make.conf
 - emerge-webrsync GPG verification fixed
@@ -42,61 +46,61 @@ RELEASE: 20141220
 - users can rewrite default variables in install script without script modification
 
 RELEASE: 20141217
-    
+
 - fixed issue #56 make.conf - user vs securix separation
 - fixed issue #51 improved network interface selection
 - fixed issue #49 GPG webrsync verification
 
 RELEASE: 20141216
-    
+
 - attempt to use GIT as main repository
 
 RELEASE: 20141207
-    
-- fixed issue #38 exit codes not always checked  
+
+- fixed issue #38 exit codes not always checked
 - fixed issue #40 gpg not verified in install.sh
 - fixed issue #44 enforcing HTTPS
 - fixed issue #38 exit code not always checked
 
 RELEASE: 20141201
-    
+
 - fixing issue with Git deployment
 
 RELEASE: 20141130
-    
+
 - fixed issue #37 installer error during sha512 verification
 - fixed issue with codesign verification
 
 RELEASE: 20141123
-    
+
 - fixed issued #29 Harden Securix flows and SSL structure
 - removed self-signed Securix GPG files
 - added signature verification of Securix files during installation and update
 - added Git support to build script, this is first commit
 
 RELEASE: 20141120
-    
+
 - deployment of new Securix Code Sign certificate (4096bit, SHA256, StartCom CA)
 - signing of critical files by Securix Code Sign certificate
 - Securix update signature verification integration
 
 RELEASE: 20141118
-    
+
 - fixed wget issue with PFS secure protocol
 - Securix ID is now using output of "ifconfig -a"
 
 RELEASE: 20141118
-    
+
 - new Securix SSL certificate (4096bit, SHA256, StartCom CA)
 - SSL forced on all subdomains via htaccess
 - all scripts started to use https instead of http and wget is now using option secure-protocol="PFS"
 
 RELEASE: 20141106
-    
+
 - added Securix SSL Root CA
 
 RELEASE: 20141031
-    
+
 - fixed issue #3 - Cryptsetup cant be build with static USE flag
 
 
@@ -155,7 +159,7 @@ version 20120103
     added automatic serial terminal access detection and setup
     added genkernel configuration generator for further kernel updates
     added user auditing, bash commands logging
-    added limits.conf Ð protection against depletion of system resources, fork bombs, ect.
+    added limits.conf ï¿½ protection against depletion of system resources, fork bombs, ect.
     added login.defs to align with Securix environment
     added VESA framebuffer with Securix Linux Logo on boot (vga 791)
     added Securix system groups operators and services
@@ -170,7 +174,7 @@ version 20111215
     advanced partitioning (boot, swap, root, usr, home, var, opt, tmp) with options (where possible) noatime, nodev, nosuid, noexec
     Full disk encryption (LUKS)
     LVM automatically for disks >20GB
-    predefined kernel setup for virtual environments (VirtualBox, KVM, VMware, É)
+    predefined kernel setup for virtual environments (VirtualBox, KVM, VMware, ...)
     rewritten yesno function
     securix user for first login
 
@@ -178,7 +182,7 @@ version 20111116
 
     environment checking, architecture, network
     functions, variables, system setup, trap errors
-    hostname, root password, manual network setup, É
+    hostname, root password, manual network setup, ...
     partitioning (/boot, swap, /)
     stage3 and portage installation
     make.conf generator
