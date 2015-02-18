@@ -806,6 +806,8 @@ f_setup_stage3() {
 
     # find path to latest stage3
     STAGE3LATESTFILE="$(grep -v '#' "${STAGE3LATESTTXT}")"
+    # remove size information from path (example: 20150108/hardened/stage3-amd64-hardened-20150108.tar.bz2 188195929)
+    STAGE3LATESTFILE=${STAGE3LATESTFILE%% *}
     # and download it
     f_download "${SECURIX_STAGE3BASEURL}${STAGE3LATESTFILE}" "${GENTOO_STAGE3BASEURL}${STAGE3LATESTFILE}"
     statusd="${?}"
