@@ -1257,6 +1257,10 @@ f_parse_cmd() {
             -a|--auto|--autobuild)
                 # autobuild mode without questions, please verify default variables
                 # use it together with -c or -s as at least root password must be changed
+                if [ "${ROOT_PASSWORD}" = "s3cur1x" ]; then
+                    f_msg error "--- Change root password variable first!"
+                fi
+                exit
                 AUTOBUILD="yes"
                 ;;
             "-c="*|"--conf="*|"--config="*)
