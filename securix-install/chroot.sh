@@ -155,12 +155,9 @@ exit_on_error() {
 ##############################################################################
 
 f_load_env() {
-    # set
-    set -a
+
     # environment & profile
     env-update && source /etc/profile
-    #
-    set +a
 }
 
 f_setup_locale() {
@@ -170,7 +167,7 @@ f_setup_locale() {
 en_US ISO-8859-1
 en_US.UTF-8 UTF-8
 !EOF
-    ESELECTLOCALE="$(eselect locale list | grep utf8 | cut -d[ -f2 | cut -d] -f1)"
+    ESELECTLOCALE="$(eselect locale list | grep utf8 | cut -d[ -f2 | cut -d] -f1 | head -n 1)"
     eselect locale set "${ESELECTLOCALE}"
     sed -i 's/unicode=\"NO\"/unicode=\"YES\"/g' /etc/rc.conf
     locale-gen
