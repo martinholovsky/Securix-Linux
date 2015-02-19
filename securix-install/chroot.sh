@@ -39,8 +39,12 @@ f_define_vars() {
     txtdefault='\e[00m'
     txtyellow='\e[0;33m'
 
-    # Load installer variables
-    . "${CHROOTVAR}"
+    # load installer variables
+    source "${CHROOTVAR}"
+
+    # log variables
+    echo "--- Start of chroot log file" >> "${CHROOTLOGFILE}"
+    cat "${CHROOTVAR}" >> "${CHROOTLOGFILE}"
 }
 
 ##############################################################################
@@ -151,8 +155,12 @@ exit_on_error() {
 ##############################################################################
 
 f_load_env() {
+    # set
+    set -a
     # environment & profile
     env-update && source /etc/profile
+    #
+    set +a
 }
 
 f_setup_locale() {

@@ -1144,15 +1144,18 @@ f_execute_chroot() {
 }
 
 f_check_chroot() {
+
+    # copy chroot logfile to main one
+    cat "/mnt/gentoo${CHROOTLOGFILE}" >> "${LOGFILE}"
+
     # check chroot status
     if [ ! -f "${CHROOTOK}" ]; then
         f_msg error "CHROOT script didnt end successfully..."
         exit_on_error
     else
-        # copy chroot logfile to main one
-        cat ${CHROOTLOG} >> ${LOGFILE}
         # do cleanup
         rm -f "${CHROOTOK}"
+        rm -f "/mnt/gentoo${CHROOTLOGFILE}"
         rm -f chroot.sh
         rm -f "${LOCKFILE}"
         rm -f sha512.hash
