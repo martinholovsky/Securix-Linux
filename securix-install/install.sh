@@ -83,6 +83,7 @@ f_define_vars() {
     LOGFILE=${LOGFILE:-"/root/securix-install.log"}
     LOCKFILE=${LOCKFILE:-"/root/securix.lock"}
     CHROOTOK=${CHROOTOK:-"/mnt/gentoo/chroot.ok"}
+    CHROOTLOGFILE=${CHROOTLOGFILE:-"/chroot.log"}
     USER_PASSWORD=${USER_PASSWORD:-"pass${RANDOM}"}
     #"#
     txtred='\e[0;31m'
@@ -1148,6 +1149,9 @@ f_check_chroot() {
         f_msg error "CHROOT script didnt end successfully..."
         exit_on_error
     else
+        # copy chroot logfile to main one
+        cat ${CHROOTLOG} >> ${LOGFILE}
+        # do cleanup
         rm -f "${CHROOTOK}"
         rm -f chroot.sh
         rm -f "${LOCKFILE}"
@@ -1196,6 +1200,14 @@ f_banner_completed() {
 }
 
 f_install_securix() {
+
+    # setup logging
+    if [ -r "${LOGFILE}" ]; then
+        rm -f "${LOGFILE}"
+    fi
+    exec >  >(tee -a "${LOGFILE}")
+    exec 2> >(tee -a "${LOGFILE}" >&2)
+
     # execute all steps
     f_check_arch
     f_define_vars
@@ -1259,8 +1271,9 @@ f_parse_cmd() {
                 # use it together with -c or -s as at least root password must be changed
                 if [ "${ROOT_PASSWORD}" = "s3cur1x" ]; then
                     f_msg error "--- Change root password variable first!"
+                    # do not continue and exit
+                    exit
                 fi
-                exit
                 AUTOBUILD="yes"
                 ;;
             "-c="*|"--conf="*|"--config="*)

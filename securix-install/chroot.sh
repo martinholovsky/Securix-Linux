@@ -31,6 +31,7 @@ f_define_vars() {
     CHROOTOK=${CHROOTOK:-"/chroot.ok"}
     CHROOTVAR=${CHROOTVAR:-"/chroot.var"}
     SECURIXVERSION=${SECURIXVERSION:-"$(date +%F)"}
+    CHROOTLOGFILE=${CHROOTLOGFILE:-"/chroot.log"}
     txtred='\e[0;31m'
     txtblue='\e[1;34m'
     txtgreen='\e[0;32m'
@@ -599,6 +600,14 @@ f_all_done() {
 }
 
 f_install_chroot() {
+
+    # setup logging
+    if [ -r "${CHROOTLOGFILE}" ]; then
+        rm -f "${CHROOTLOGFILE}"
+    fi
+    exec >  >(tee -a "${CHROOTLOGFILE}")
+    exec 2> >(tee -a "${CHROOTLOGFILE}" >&2)
+
     # execute chroot functions
     f_define_vars
     f_load_env
