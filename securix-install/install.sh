@@ -1100,34 +1100,34 @@ f_mount_proc_dev() {
 f_chroot_variables() {
     # chroot variables
     cat > /mnt/gentoo/chroot.var << !EOF
-ROOT_PASSWORD="${ROOT_PASSWORD}"
-ROOT_MAIL="${ROOT_MAIL}"
-MAIL_HOST="${MAIL_HOST}"
-USER_PASSWORD="${USER_PASSWORD}"
-NETETH="${NETETH}"
-NETIP="${NETIP}"
-DEVICE="${DEVICE}"
-KERNELPATH="${KERNELPATH}"
-http_proxy="${http_proxy}"
-ARCH="${ARCH}"
-ROOTPV="${ROOTPV}"
-USELVM="${USELVM}"
-USELUKS="${USELUKS}"
-GENKERNEL="${GENKERNEL}"
-MAPPER="${MAPPER}"
-SYSTEMPACKAGE="${SYSTEMPACKAGE}"
-MOPTS="${MOPTS}"
-USESERIAL="${USESERIAL}"
-GRUBOPTS="${GRUBOPTS}"
-BONDING="${BONDING}"
-NETNTP="${NETNTP}"
-NETNTP2="${NETNTP2}"
-SECURIXID="${SECURIXID}"
-SECURIX_HOSTNAME="${SECURIX_HOSTNAME}"
-VIRTUAL="${VIRTUAL}"
-VIRTUALHOST="${VIRTUALHOST}"
-AUTOBUILD="${AUTOBUILD}"
-GPG_EXTRA_OPTS="${GPG_EXTRA_OPTS}"
+export ROOT_PASSWORD="${ROOT_PASSWORD}"
+export ROOT_MAIL="${ROOT_MAIL}"
+export MAIL_HOST="${MAIL_HOST}"
+export USER_PASSWORD="${USER_PASSWORD}"
+export NETETH="${NETETH}"
+export NETIP="${NETIP}"
+export DEVICE="${DEVICE}"
+export KERNELPATH="${KERNELPATH}"
+export http_proxy="${http_proxy}"
+export ARCH="${ARCH}"
+export ROOTPV="${ROOTPV}"
+export USELVM="${USELVM}"
+export USELUKS="${USELUKS}"
+export GENKERNEL="${GENKERNEL}"
+export MAPPER="${MAPPER}"
+export SYSTEMPACKAGE="${SYSTEMPACKAGE}"
+export MOPTS="${MOPTS}"
+export USESERIAL="${USESERIAL}"
+export GRUBOPTS="${GRUBOPTS}"
+export BONDING="${BONDING}"
+export NETNTP="${NETNTP}"
+export NETNTP2="${NETNTP2}"
+export SECURIXID="${SECURIXID}"
+export SECURIX_HOSTNAME="${SECURIX_HOSTNAME}"
+export VIRTUAL="${VIRTUAL}"
+export VIRTUALHOST="${VIRTUALHOST}"
+export AUTOBUILD="${AUTOBUILD}"
+export GPG_EXTRA_OPTS="${GPG_EXTRA_OPTS}"
 !EOF
 
     # if really needed, config file can change some variables in chroot
@@ -1203,13 +1203,6 @@ f_banner_completed() {
 }
 
 f_install_securix() {
-
-    # setup logging
-    if [ -r "${LOGFILE}" ]; then
-        rm -f "${LOGFILE}"
-    fi
-    exec >  >(tee -a "${LOGFILE}")
-    exec 2> >(tee -a "${LOGFILE}" >&2)
 
     # execute all steps
     f_check_arch
@@ -1362,6 +1355,13 @@ f_parse_cmd() {
         esac
     done
 }
+
+# setup logging
+if [ -r "${LOGFILE}" ]; then
+    rm -f "${LOGFILE}"
+fi
+exec >  >(tee -a "${LOGFILE}")
+exec 2> >(tee -a "${LOGFILE}" >&2)
 
 # main execution
 f_parse_cmd ${1+"$@"}

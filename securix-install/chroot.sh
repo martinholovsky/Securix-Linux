@@ -42,6 +42,11 @@ f_define_vars() {
     # load installer variables
     source "${CHROOTVAR}"
 
+    # load config file if any
+    if [ -r "/chroot.config" ]; then
+        source chroot.config
+    fi
+
     # log variables
     echo "--- Start of chroot log file" >> "${CHROOTLOGFILE}"
     cat "${CHROOTVAR}" >> "${CHROOTLOGFILE}"
@@ -144,7 +149,7 @@ exit_on_error() {
     # for debug only
     /bin/bash
     # as $CHROOTVAR will be unknown
-    source /chroot.var
+    source "${CHROOTVAR}"
     #exit $exit_status
 }
 
@@ -207,7 +212,7 @@ EOF
 f_setup_hardened_profile() {
     # select hardened profile
     f_msg info "###-### Step: Hardened profile ---"
-    PROFILE="$(eselect profile list | grep -vE "selinux|no-multilib|uclibc|x32|musl" | grep hardened | cut -d"[" -f2 | cut -d"]" -f1)"
+    PROFILE="$(eselect profile list | grep "hardened/linux/amd64 " | cut -d"[" -f2 | cut -d"]" -f1)"
     eselect profile set "${PROFILE}"
     if [ "${?}" -ne "0" ]; then
         f_msg error "ERROR: There seems to be problem when setup hardened profile"
@@ -606,13 +611,6 @@ f_all_done() {
 
 f_install_chroot() {
 
-    # setup logging
-    if [ -r "${CHROOTLOGFILE}" ]; then
-        rm -f "${CHROOTLOGFILE}"
-    fi
-    exec >  >(tee -a "${CHROOTLOGFILE}")
-    exec 2> >(tee -a "${CHROOTLOGFILE}" >&2)
-
     # execute chroot functions
     f_define_vars
     f_load_env
@@ -655,9 +653,16 @@ f_install_chroot() {
 f_msg info "###-### Step: Running CHROOT script ---"
 
 # if chroot config file exist ${CHROOTCONFIG}, load it
-if [ -r /chroot.config ]; then
+if [ -r "/chroot.config" ]; then
     source /chroot.config
 fi
+
+# setup logging
+if [ -r "${CHROOTLOGFILE}" ]; then
+    rm -f "${CHROOTLOGFILE}"
+fi
+exec >  >(tee -a "${CHROOTLOGFILE}")
+exec 2> >(tee -a "${CHROOTLOGFILE}" >&2)
 
 # main execution
 f_install_chroot ${1+"$@"}
