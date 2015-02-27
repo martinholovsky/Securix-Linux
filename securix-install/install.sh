@@ -1146,7 +1146,9 @@ f_execute_chroot() {
 f_check_chroot() {
 
     # copy chroot logfile to main one
-    cat "/mnt/gentoo${CHROOTLOGFILE}" >> "${LOGFILE}"
+    if [ -r "/mnt/gentoo${CHROOTLOGFILE}" ]; then
+        cat "/mnt/gentoo${CHROOTLOGFILE}" >> "${LOGFILE}"
+    fi
 
     # check chroot status
     if [ ! -f "${CHROOTOK}" ]; then

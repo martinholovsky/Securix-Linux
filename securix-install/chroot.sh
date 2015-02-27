@@ -172,8 +172,9 @@ f_setup_locale() {
 en_US ISO-8859-1
 en_US.UTF-8 UTF-8
 !EOF
-    ESELECTLOCALE="$(eselect locale list | grep utf8 | cut -d[ -f2 | cut -d] -f1 | head -n 1)"
-    eselect locale set "${ESELECTLOCALE}"
+    #ESELECTLOCALE="$(eselect locale list | grep utf8 | cut -d[ -f2 | cut -d] -f1 | head -n 1)"
+    eselect locale set en_US.utf8
+    source /etc/profile
     sed -i 's/unicode=\"NO\"/unicode=\"YES\"/g' /etc/rc.conf
     locale-gen
 }
@@ -306,7 +307,7 @@ f_rebuild_toolchain() {
     fi
 
     # select newer Python
-    PYTHONCONFIG="$(eselect python list | grep 'python3.2' | cut -d"[" -f2 | cut -d"]" -f1)"
+    PYTHONCONFIG="$(eselect python list | grep -vE "Available|python2" | cut -d"[" -f2 | cut -d"]" -f1)"
     if [ ! -z "${PYTHONCONFIG}" ]; then
         eselect python set "${PYTHONCONFIG}"
         python-updater
@@ -321,7 +322,7 @@ f_emerge_apps() {
 htop tcpdump lsof rkhunter tcptraceroute strace app-misc/mc dmidecode zip ftp \
 ethtool net-tools iproute2 mirrorselect net-misc/telnet-bsd app-misc/screen \
 whois bind-tools app-crypt/gnupg iftop netcat colordiff unhide scrub pwgen \
-pyinotify traceroute wget app-editors/vim
+pyinotify traceroute wget app-editors/vim sys-fs/udev-init-scripts
 
     revdep-rebuild --quiet
 }
@@ -656,13 +657,6 @@ f_msg info "###-### Step: Running CHROOT script ---"
 if [ -r "/chroot.config" ]; then
     source /chroot.config
 fi
-
-# setup logging
-if [ -r "${CHROOTLOGFILE}" ]; then
-    rm -f "${CHROOTLOGFILE}"
-fi
-exec >  >(tee -a "${CHROOTLOGFILE}")
-exec 2> >(tee -a "${CHROOTLOGFILE}" >&2)
 
 # main execution
 f_install_chroot ${1+"$@"}
