@@ -1,3 +1,5 @@
+**Project was discontinued, feel free to fork**
+
 ![Securix Mascot](https://www.securix.org/wp-content/uploads/mascot.png)
 
 Securix GNU/Linux
